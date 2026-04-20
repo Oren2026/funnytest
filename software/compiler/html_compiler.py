@@ -253,7 +253,7 @@ render();
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>倉儲管理系統</title>
+<title>{intent_data.get("name", "應用程式")}</title>
 <style>
 {base_css}
 {merge_css(css_parts)}
@@ -264,7 +264,7 @@ render();
 
 <header class="warehouse-header">
   <div class="header-left">
-    <span class="header-title">📦 倉儲管理系統</span>
+    <span class="header-title">📋 {intent_data.get("name", "應用程式")}</span>
   </div>
   <div class="header-actions">
     <button class="btn-primary" onclick="openAdd()">+ 新增</button>

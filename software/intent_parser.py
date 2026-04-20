@@ -3,6 +3,7 @@ intent_parser.py — 意圖解析器
 
 分析自然語意描述，對應到需要的技能。
 """
+import re
 
 from compiler.html_compiler import compile_html
 from compiler.react_compiler import compile_react
@@ -42,7 +43,6 @@ INTENT_MAP = {
 
 def parse_seed_theme(raw_text: str) -> str:
     """從原始文字抽出 theme 設定。"""
-    import re
     m = re.search(r'<style\s+theme="([^"]+)"', raw_text)
     if m:
         return m.group(1)
@@ -56,12 +56,23 @@ def parse_intent(intent_text: str) -> dict:
     skills_used = set()
     intent_type = "unknown"
 
+    # 提取 <name> 標籤作為應用程式名稱
+    name_match = re.search(r"<name>([^<]+)</name>", intent_text)
+    app_name = name_match.group(1).strip() if name_match else None
+
     # 偵測意圖類型
     if any(k in text for k in ["登入", "登入頁", "login"]):
         intent_type = "login"
         skills_used.update(["layout-header", "button-primary", "input-field", "toast-notify"])
     elif any(k in text for k in ["倉儲", "庫存", "warehouse", "inventory"]):
         intent_type = "warehouse"
+        skills_used.update([
+            "layout-header", "button-primary", "button-danger",
+            "table-data", "modal-form", "toast-notify",
+            "search-bar", "badge-status", "confirm-dialog"
+        ])
+    elif any(k in text for k in ["代辦", "待辦", "todo", "task"]):
+        intent_type = "todo"
         skills_used.update([
             "layout-header", "button-primary", "button-danger",
             "table-data", "modal-form", "toast-notify",
@@ -84,9 +95,9 @@ def parse_intent(intent_text: str) -> dict:
     return {
         "intent_type": intent_type,
         "skills": list(skills_used),
+        "name": app_name,
         "original": intent_text,
     }
-
 
 def synthesize(intent_text: str, target: str) -> str:
     """根據意圖與目標平台生成代碼。"""
