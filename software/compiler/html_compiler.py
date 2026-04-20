@@ -74,7 +74,8 @@ def _build_dynamic_table_html(schema: List[Dict]) -> tuple:
     render_body_lines.append("    ].join('');")
 
     render_body_lines.extend([
-        "    return `<tr>${cells}</tr>`;",
+        "    const rowClass = item.completed ? ' class=\"todo-completed\"' : '';",
+        "    return `<tr${rowClass}>${cells}</tr>`;",
         "  }).join('');",
         "}",
     ])
@@ -84,9 +85,10 @@ def _build_dynamic_table_html(schema: List[Dict]) -> tuple:
 function _renderBadge(value, item) {
   if (value === undefined || value === null) return '';
   const v = String(value);
-  if (v === '缺貨' || v === '0') return '<span class="badge badge-danger">缺貨</span>';
-  if (item.minStock !== undefined && item.quantity <= item.minStock) return '<span class="badge badge-warning">庫存不足</span>';
-  return '<span class="badge badge-ok">正常</span>';
+  if (v === '高') return '<span class="badge badge-danger">高</span>';
+  if (v === '中') return '<span class="badge badge-info">中</span>';
+  if (v === '低') return '<span class="badge badge-ok">低</span>';
+  return '<span class="badge">' + v + '</span>';
 }
 
 function _renderActions(item) {
@@ -97,14 +99,85 @@ function toggleComplete(id) {
   const item = STATE.items.find(x => x.id === id);
   if (item) {
     item.completed = !item.completed;
-    showToast(item.completed ? '已完成' : '已取消完成', 'success');
+    showToast(item.completed ? '已完成' : '已取消完成', item.completed ? 'success' : 'info');
     render();
   }
 }
 """
+
     render_js = "function render() {\n" + "\n".join("  " + line for line in render_body_lines) + "\n}\n" + helpers
 
     return thead_html, render_js, col_count
+
+
+def _build_form_from_schema(schema):
+    """Generate form HTML from schema definition."""
+    form_fields = []
+    field_ids = []
+    
+    for col in schema:
+        key = col["key"]
+        label = col.get("label", key)
+        col_type = col.get("type", "text")
+        
+        if col_type in ("action", "checkbox"):
+            continue
+        
+        field_ids.append(key)
+        
+        if col_type == "badge":
+            form_fields.append(
+                f'      <div class="form-group">\n'
+                f'        <label>{label}</label>\n'
+                f'        <select id="field-{key}">\n'
+                f'          <option value="">請選擇</option>\n'
+                f'          <option value="高">高</option>\n'
+                f'          <option value="中">中</option>\n'
+                f'          <option value="低">低</option>\n'
+                f'        </select>\n'
+                f'      </div>'
+            )
+        elif col_type == "date":
+            form_fields.append(
+                f'      <div class="form-group">\n'
+                f'        <label>{label}</label>\n'
+                f'        <input type="date" id="field-{key}" />\n'
+                f'      </div>'
+            )
+        else:
+            form_fields.append(
+                f'      <div class="form-group">\n'
+                f'        <label>{label}</label>\n'
+                f'        <input type="text" id="field-{key}" />\n'
+                f'      </div>'
+            )
+    
+    open_add = "function openAdd() {\\n  STATE.editTarget = null;\\n  document.getElementById('modal-title').textContent = '新增項目';\\n  document.getElementById('edit-id').value = '';\\n" + "\\n".join([f"  document.getElementById('field-{key}').value = '';" for key in field_ids]) + "\\n  document.getElementById('form-modal').style.display = 'flex';\\n}"
+    
+    open_edit = "function openEdit(id) {\\n  const item = STATE.items.find(x => x.id === id);\\n  STATE.editTarget = id;\\n  document.getElementById('modal-title').textContent = '編輯項目';\\n  document.getElementById('edit-id').value = id;\\n" + "\\n".join([f"  document.getElementById('field-{key}').value = item.{key} || '';" for key in field_ids]) + "\\n  document.getElementById('form-modal').style.display = 'flex';\\n}"
+    
+    submit_data = "\\n".join([f"    {key}: document.getElementById('field-{key}').value.trim()," for key in field_ids])
+    
+    form_html = (
+        '<div id="form-modal" class="modal-overlay" style="display:none">\n'
+        '  <div class="modal-panel">\n'
+        '    <div class="modal-header">\n'
+        '      <h3 id="modal-title">新增項目</h3>\n'
+        '      <button class="modal-close" onclick="closeModal()">×</button>\n'
+        '    </div>\n'
+        '    <form id="inventory-form" class="modal-form">\n'
+        '      <input type="hidden" id="edit-id" />\n'
+        + '\n'.join(form_fields) + '\n'
+        '      <div class="form-actions">\n'
+        '        <button type="button" class="btn-cancel" onclick="closeModal()">取消</button>\n'
+        '        <button type="submit" class="btn-primary">儲存</button>\n'
+        '      </div>\n'
+        '    </form>\n'
+        '  </div>\n'
+        '</div>'
+    )
+    
+    return form_html, open_add, open_edit, submit_data
 
 
 def compile_html(skills_used: List[str], intent_data: Dict) -> str:
@@ -132,6 +205,8 @@ def compile_html(skills_used: List[str], intent_data: Dict) -> str:
         {"key": "updatedAt", "label": "最後更新", "type": "date"},
         {"key": "actions", "label": "操作", "type": "action"},
     ])
+
+    form_html, open_add_js, open_edit_js, submit_data_js = _build_form_from_schema(schema)
 
     dynamic_thead, dynamic_render, col_count = _build_dynamic_table_html(schema)
 
@@ -168,47 +243,7 @@ def compile_html(skills_used: List[str], intent_data: Dict) -> str:
 </div>'''
 
     # Modal
-    modal_html = '''<div id="form-modal" class="modal-overlay" style="display:none">
-  <div class="modal-panel">
-    <div class="modal-header">
-      <h3 id="modal-title">新增項目</h3>
-      <button class="modal-close" onclick="closeModal()">×</button>
-    </div>
-    <form id="inventory-form" class="modal-form">
-      <input type="hidden" id="edit-id" />
-      <div class="form-group">
-        <label>名稱 *</label>
-        <input type="text" id="field-name" required placeholder="例如：螺絲 M3" />
-      </div>
-      <div class="form-group">
-        <label>分類 *</label>
-        <select id="field-category" required>
-          <option value="">請選擇</option>
-          <option value="電子元件">電子元件</option>
-          <option value="工具">工具</option>
-          <option value="原料">原料</option>
-          <option value="包裝">包裝</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>數量 *</label>
-        <input type="number" id="field-quantity" required min="0" />
-      </div>
-      <div class="form-group">
-        <label>安全存量</label>
-        <input type="number" id="field-minStock" min="0" value="10" />
-      </div>
-      <div class="form-group">
-        <label>備註</label>
-        <textarea id="field-note" rows="3"></textarea>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn-cancel" onclick="closeModal()">取消</button>
-        <button type="submit" class="btn-primary">儲存</button>
-      </div>
-    </form>
-  </div>
-</div>'''
+    modal_html = form_html
 
     confirm_html = '''<div id="confirm-overlay" class="modal-overlay" style="display:none">
   <div class="confirm-panel">
@@ -239,34 +274,16 @@ const STATE = {
 
 ''' + dynamic_render + '''
 
-function openAdd() {
-  STATE.editTarget = null;
-  document.getElementById('modal-title').textContent = '新增項目';
-  document.getElementById('edit-id').value = '';
-  ['field-name','field-category','field-quantity','field-minStock','field-note'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('field-minStock').value = '10';
-  document.getElementById('form-modal').style.display = 'flex';
-}
+{open_add_js}
 
-function openEdit(id) {
-  const item = STATE.items.find(x => x.id === id);
-  STATE.editTarget = id;
-  document.getElementById('modal-title').textContent = '編輯項目';
-  document.getElementById('edit-id').value = id;
-  document.getElementById('field-name').value = item.name;
-  document.getElementById('field-category').value = item.category;
-  document.getElementById('field-quantity').value = item.quantity;
-  document.getElementById('field-minStock').value = item.minStock;
-  document.getElementById('field-note').value = item.note || '';
-  document.getElementById('form-modal').style.display = 'flex';
-}
+{open_edit_js}
 
 function closeModal() { document.getElementById('form-modal').style.display = 'none'; STATE.editTarget = null; }
 
 function openDelete(id) {
   STATE.deleteTarget = id;
   const item = STATE.items.find(x => x.id === id);
-  document.getElementById('confirm-title').textContent = '確認刪除「' + item.name + '」？';
+  document.getElementById('confirm-title').textContent = '確認刪除「' + (item.title || item.name || '') + '」？';
   document.getElementById('confirm-overlay').style.display = 'flex';
 }
 
@@ -284,12 +301,7 @@ function doDelete() {
 document.getElementById('inventory-form').onsubmit = function(e) {
   e.preventDefault();
   const data = {
-    name: document.getElementById('field-name').value.trim(),
-    category: document.getElementById('field-category').value,
-    quantity: parseInt(document.getElementById('field-quantity').value) || 0,
-    minStock: parseInt(document.getElementById('field-minStock').value) || 10,
-    note: document.getElementById('field-note').value.trim(),
-    updatedAt: new Date().toISOString().split('T')[0],
+{submit_data}
   };
   if (STATE.editTarget !== null) {
     const idx = STATE.items.findIndex(x => x.id === STATE.editTarget);
@@ -336,6 +348,10 @@ render();
         app_js = app_js.replace('@ITEMS@', '{id:1,name:"範例項目",category:"一般",quantity:0,minStock:0,note:"",updatedAt:"2026-04-20"}')
 
     app_js = app_js.replace('%%SORT%%', default_sort)
+    app_js = app_js.replace('{open_add_js}', open_add_js)
+    app_js = app_js.replace('{open_edit_js}', open_edit_js)
+    app_js = app_js.replace('{submit_data}', submit_data_js)
+    page_css = ".todo-completed td { text-decoration: line-through; opacity: 0.6; }\n"
     page = f'''<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -343,6 +359,7 @@ render();
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{intent_data.get("name", "應用程式")}</title>
 <style>
+{page_css}
 {base_css}
 {merge_css(css_parts)}
 {theme_css}
