@@ -9,3 +9,5 @@ build/
 *.jsx
 .vscode/
 .DS_Store
+warehouse.html
+WarehouseApp.jsx
