@@ -20,73 +20,44 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .header-title { font-size: 20px; font-weight: 600; }
 .header-actions { display: flex; gap: 8px; }
 
-.inventory-table-wrapper { overflow-x: auto; }
-.inventory-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-.inventory-table th {
-  background: #f1f5f9;
-  padding: 12px 16px;
-  text-align: left;
-  font-weight: 600;
-  color: #475569;
-  border-bottom: 2px solid #e2e8f0;
-.inventory-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
-.inventory-table tr:hover td { background: #f8fafc; }
-.category-tag {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-.cat-electronics { background: #dbeafe; color: #1d4ed8; }
-.cat-tools { background: #fef3c7; color: #d97706; }
-.cat-materials { background: #d1fae5; color: #059669; }
-.cat-packaging { background: #ede9fe; color: #7c3aed; }
-.action-btns { display: flex; gap: 4px; }
-.btn-edit {
-  padding: 4px 10px;
-  border-radius: 4px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.15s;
-.btn-edit:hover { background: #f1f5f9; }
-.btn-delete {
-  padding: 4px 10px;
-  border-radius: 4px;
-  border: 1px solid #fca5a5;
-  background: #fff;
-  color: #dc2626;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.15s;
-.btn-delete:hover { background: #fef2f2; }
-.empty-state { text-align: center; color: #94a3b8; padding: 40px !important; }
-.confirm-panel {
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+.modal-panel {
   background: #fff;
   border-radius: 12px;
-  padding: 32px;
-  width: 360px;
-  max-width: 90vw;
-  text-align: center;
+  width: 480px;
+  max-width: 95vw;
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-.confirm-icon { font-size: 40px; margin-bottom: 16px; }
-.confirm-panel h3 { margin: 0 0 8px; font-size: 18px; color: #1e293b; }
-.confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
-.confirm-actions { display: flex; gap: 8px; justify-content: center; }
-.badge {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-.badge-ok { background: #d1fae5; color: #059669; }
-.badge-warning { background: #fef3c7; color: #d97706; }
-.badge-danger { background: #fee2e2; color: #dc2626; }
+  overflow: hidden;
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+.modal-header h3 { margin: 0; font-size: 18px; color: #1e293b; }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 6px;
+  border: none; background: transparent; font-size: 20px;
+  cursor: pointer; color: #94a3b8;
+.modal-close:hover { background: #f1f5f9; color: #475569; }
+.modal-form { padding: 24px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #374151; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid #d1d5db; border-radius: 6px;
+  font-size: 14px; box-sizing: border-box;
+  transition: border-color 0.15s;
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none; border-color: #3b82f6;
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px; }
+.btn-cancel {
+  padding: 8px 16px; border-radius: 6px;
+  border: 1px solid #d1d5db; background: #fff;
+  font-size: 14px; cursor: pointer;
+.btn-cancel:hover { background: #f9fafb; }
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -161,44 +132,73 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 @keyframes toastIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 1000;
-.modal-panel {
+.badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+.badge-ok { background: #d1fae5; color: #059669; }
+.badge-warning { background: #fef3c7; color: #d97706; }
+.badge-danger { background: #fee2e2; color: #dc2626; }
+.confirm-panel {
   background: #fff;
   border-radius: 12px;
-  width: 480px;
-  max-width: 95vw;
+  padding: 32px;
+  width: 360px;
+  max-width: 90vw;
+  text-align: center;
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  overflow: hidden;
-.modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e2e8f0;
-.modal-header h3 { margin: 0; font-size: 18px; color: #1e293b; }
-.modal-close {
-  width: 32px; height: 32px; border-radius: 6px;
-  border: none; background: transparent; font-size: 20px;
-  cursor: pointer; color: #94a3b8;
-.modal-close:hover { background: #f1f5f9; color: #475569; }
-.modal-form { padding: 24px; }
-.form-group { margin-bottom: 16px; }
-.form-group label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #374151; }
-.form-group input, .form-group select, .form-group textarea {
-  width: 100%; padding: 10px 12px;
-  border: 1px solid #d1d5db; border-radius: 6px;
-  font-size: 14px; box-sizing: border-box;
-  transition: border-color 0.15s;
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-  outline: none; border-color: #3b82f6;
-.form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px; }
-.btn-cancel {
-  padding: 8px 16px; border-radius: 6px;
-  border: 1px solid #d1d5db; background: #fff;
-  font-size: 14px; cursor: pointer;
-.btn-cancel:hover { background: #f9fafb; }
+.confirm-icon { font-size: 40px; margin-bottom: 16px; }
+.confirm-panel h3 { margin: 0 0 8px; font-size: 18px; color: #1e293b; }
+.confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
+.confirm-actions { display: flex; gap: 8px; justify-content: center; }
+.inventory-table-wrapper { overflow-x: auto; }
+.inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+.inventory-table th {
+  background: #f1f5f9;
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+.inventory-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+.inventory-table tr:hover td { background: #f8fafc; }
+.category-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+.cat-electronics { background: #dbeafe; color: #1d4ed8; }
+.cat-tools { background: #fef3c7; color: #d97706; }
+.cat-materials { background: #d1fae5; color: #059669; }
+.cat-packaging { background: #ede9fe; color: #7c3aed; }
+.action-btns { display: flex; gap: 4px; }
+.btn-edit {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+.btn-edit:hover { background: #f1f5f9; }
+.btn-delete {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid #fca5a5;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+.btn-delete:hover { background: #fef2f2; }
+.empty-state { text-align: center; color: #94a3b8; padding: 40px !important; }
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
