@@ -1,0 +1,26 @@
+# skill: badge-status
+# depends: none
+# prohibit: none
+
+[html]
+<!-- inline use within table -->
+<span class="badge badge-ok">正常</span>
+<span class="badge badge-warning">庫存不足</span>
+<span class="badge badge-danger">缺貨</span>
+
+[react]
+const Badge = ({ type, children }) => (
+  <span className={`badge badge-${type}`}>{children}</span>
+);
+// type: ok | warning | danger
+
+[style]
+.badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.badge-ok { background: #d1fae5; color: #059669; }
+.badge-warning { background: #fef3c7; color: #d97706; }
+.badge-danger { background: #fee2e2; color: #dc2626; }

@@ -1,0 +1,10 @@
+// dynamic-allocation skill — uses malloc/calloc
+// WARNING: conflicts with static_memory constraint
+void* safe_malloc(size_t size) {
+    void* ptr = malloc(size);
+    if (!ptr) {
+        printf("ERROR: malloc failed\n");
+        exit(1);
+    }
+    return ptr;
+}

@@ -1,0 +1,39 @@
+# skill: queue-static
+# depends: linked-list-static
+# prohibit: none
+
+// Static queue — built on linked-list-static
+// Uses the linked-list node allocator, no dynamic memory
+
+struct StaticQueue {
+    struct StaticLinkedList list;
+};
+
+void queue_init(struct StaticQueue* q) {
+    ll_init(&q->list);
+}
+
+void queue_enqueue(struct StaticQueue* q, int val) {
+    // Traverse to end — O(n) but no dynamic allocation
+    if (q->list.size == 0) {
+        ll_push_front(&q->list, val);
+        return;
+    }
+    int curr = q->list.nodes[0].next;
+    while (q->list.nodes[curr].next != LL_NULL) {
+        curr = q->list.nodes[curr].next;
+    }
+    int new_node = ll_alloc_node(&q->list);
+    if (new_node == LL_NULL) return;
+    q->list.nodes[new_node].data = val;
+    q->list.nodes[new_node].next = LL_NULL;
+    q->list.nodes[curr].next = new_node;
+}
+
+int queue_dequeue(struct StaticQueue* q) {
+    return ll_pop_front(&q->list);
+}
+
+int queue_is_empty(struct StaticQueue* q) {
+    return q->list.size == 0;
+}

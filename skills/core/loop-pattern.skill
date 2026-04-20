@@ -1,0 +1,24 @@
+# skill: loop-pattern
+# depends: none
+# prohibit: none
+
+// Common loop patterns
+
+// Infinite loop with interrupt check
+#define LOOP_WHILE(cond) while(keep_running && (cond))
+
+// Periodic tick — calls fn() every interval seconds
+void periodic_tick(void (*fn)(void), int interval) {
+    while (keep_running) {
+        fn();
+        sleep(interval);
+    }
+}
+
+// For loop with bounds check
+void bounded_for(int start, int end, void (*fn)(int)) {
+    if (start > end) return;
+    for (int i = start; i <= end && keep_running; i++) {
+        fn(i);
+    }
+}

@@ -1,0 +1,24 @@
+# skill: memory-static
+# depends: none
+# prohibit: malloc,calloc,realloc,free
+
+// Static memory allocation patterns
+
+// Declare a static buffer with max size
+#define STATIC_BUFFER(name, size) \
+    static int name[size]
+
+// Static buffer with current length tracker
+struct StaticBuffer {
+    int* data;
+    int capacity;
+    int length;
+};
+
+// Initialize a static buffer
+void static_buffer_init(struct StaticBuffer* buf, int capacity) {
+    static int storage[256];
+    buf->data = storage;
+    buf->capacity = capacity;
+    buf->length = 0;
+}

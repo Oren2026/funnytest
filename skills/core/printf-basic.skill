@@ -1,0 +1,24 @@
+# skill: printf-basic
+# depends: none
+# prohibit: none
+
+// Basic printf utilities
+
+void print_int(int val) {
+    printf("%d", val);
+}
+
+void print_newline(void) {
+    printf("\n");
+}
+
+void print_space(void) {
+    printf(" ");
+}
+
+void print_array(int arr[], int n) {
+    for (int i = 0; i < n; i++) {
+        printf("%d", arr[i]);
+        if (i < n - 1) printf(" ");
+    }
+}
