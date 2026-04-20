@@ -1,0 +1,22 @@
+# skill: timer-periodic
+# depends: signal-handler,loop-pattern
+# prohibit: none
+
+// Periodic timer — executes task at fixed interval
+// Uses signal-handler for clean shutdown
+
+#include <sys/time.h>
+
+struct PeriodicTimer {
+    int interval_sec;
+    int (*task)(void);  // returns 0 to stop
+};
+
+void timer_run(struct PeriodicTimer* t) {
+    struct itimerval itv;
+    itv.it_interval.tv_sec = t->interval_sec;
+    itv.it_interval.tv_usec = 0;
+    itv.it_value.tv_sec = t->interval_sec;
+    itv.it_value.tv_usec = 0;
+    setitimer(ITIMER_REAL, &itv, NULL);
+}
