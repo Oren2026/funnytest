@@ -8,35 +8,12 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 
-.confirm-panel {
-  background: #fff;
-  border-radius: 12px;
-  padding: 32px;
-  width: 360px;
-  max-width: 90vw;
-  text-align: center;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-}
-.confirm-icon { font-size: 40px; margin-bottom: 16px; }
-.confirm-panel h3 { margin: 0 0 8px; font-size: 18px; color: #1e293b; }
-.confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
-.confirm-actions { display: flex; gap: 8px; justify-content: center; }
-
-.warehouse-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: #1a1a2e;
-  color: #fff;
-  border-bottom: 1px solid #16213e;
-.header-title { font-size: 20px; font-weight: 600; }
-.header-actions { display: flex; gap: 8px; }
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.5);
   display: flex; align-items: center; justify-content: center;
   z-index: 1000;
+}
 .modal-panel {
   background: #fff;
   border-radius: 12px;
@@ -70,6 +47,35 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   border: 1px solid #d1d5db; background: #fff;
   font-size: 14px; cursor: pointer;
 .btn-cancel:hover { background: #f9fafb; }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  gap: 16px;
+  flex-wrap: wrap;
+.search-box { position: relative; flex: 1; max-width: 300px; }
+.search-box input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E") no-repeat 10px center;
+  box-sizing: border-box;
+.search-box input:focus { outline: none; border-color: #3b82f6; }
+.filter-group { display: flex; gap: 8px; }
+.filter-group select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  cursor: pointer;
+.filter-group select:focus { outline: none; border-color: #3b82f6; }
 .inventory-table-wrapper { overflow-x: auto; }
 .inventory-table {
   width: 100%;
@@ -117,34 +123,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   transition: all 0.15s;
 .btn-delete:hover { background: #fef2f2; }
 .empty-state { text-align: center; color: #94a3b8; padding: 40px !important; }
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  gap: 16px;
-  flex-wrap: wrap;
-.search-box { position: relative; flex: 1; max-width: 300px; }
-.search-box input {
-  width: 100%;
-  padding: 8px 12px 8px 36px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E") no-repeat 10px center;
-  box-sizing: border-box;
-.search-box input:focus { outline: none; border-color: #3b82f6; }
-.filter-group { display: flex; gap: 8px; }
-.filter-group select {
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  background: #fff;
-  cursor: pointer;
-.filter-group select:focus { outline: none; border-color: #3b82f6; }
 .badge {
   padding: 2px 8px;
   border-radius: 4px;
@@ -153,23 +131,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .badge-ok { background: #d1fae5; color: #059669; }
 .badge-warning { background: #fef3c7; color: #d97706; }
 .badge-danger { background: #fee2e2; color: #dc2626; }
-.toast-container {
-  position: fixed; bottom: 24px; right: 24px;
-  display: flex; flex-direction: column; gap: 8px;
-  z-index: 9999;
-.toast {
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  animation: toastIn 0.2s ease;
-.toast-success { background: #059669; color: #fff; }
-.toast-error { background: #dc2626; color: #fff; }
-.toast-warning { background: #d97706; color: #fff; }
-@keyframes toastIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+.warehouse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #1a1a2e;
+  color: #fff;
+  border-bottom: 1px solid #16213e;
+.header-title { font-size: 20px; font-weight: 600; }
+.header-actions { display: flex; gap: 8px; }
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -199,6 +170,35 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   cursor: pointer;
   transition: all 0.15s;
 .btn-danger:hover { background: #fef2f2; border-color: #f87171; }
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px;
+  display: flex; flex-direction: column; gap: 8px;
+  z-index: 9999;
+.toast {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: toastIn 0.2s ease;
+.toast-success { background: #059669; color: #fff; }
+.toast-error { background: #dc2626; color: #fff; }
+.toast-warning { background: #d97706; color: #fff; }
+@keyframes toastIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+.confirm-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  width: 360px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+.confirm-icon { font-size: 40px; margin-bottom: 16px; }
+.confirm-panel h3 { margin: 0 0 8px; font-size: 18px; color: #1e293b; }
+.confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
+.confirm-actions { display: flex; gap: 8px; justify-content: center; }
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
@@ -352,22 +352,15 @@ body {
 
 <div class="toolbar">
   <div class="search-box">
-    <input type="text" id="search-input" placeholder="搜尋名稱..." oninput="handleSearch(this.value)" />
+    <input type="text" id="search-input" placeholder="搜尋..." oninput="handleSearch(this.value)" />
   </div>
   <div class="filter-group">
-    <select id="filter-category" onchange="handleFilter(this.value)">
-      <option value="">全部分類</option>
-      <option value="電子元件">電子元件</option>
-      <option value="工具">工具</option>
-      <option value="原料">原料</option>
-      <option value="包裝">包裝</option>
-    </select>
+    <select id="filter-category" style="display:none"></select>
     <select id="sort-by" onchange="handleSort(this.value)">
-      <option value="updatedAt-desc">最近更新</option>
-      <option value="name-asc">名稱 A-Z</option>
-      <option value="name-desc">名稱 Z-A</option>
-      <option value="quantity-asc">數量 ↑</option>
-      <option value="quantity-desc">數量 ↓</option>
+      <option value="title-asc">標題 ↑</option>
+      <option value="title-desc">標題 ↓</option>
+      <option value="dueDate-asc">截止日期 ↑</option>
+      <option value="dueDate-desc">截止日期 ↓</option>
     </select>
   </div>
 </div>
@@ -377,7 +370,11 @@ body {
     <table class="inventory-table">
       <thead>
         <tr>
-          <th>名稱</th><th>分類</th><th>數量</th><th>狀態</th><th>最後更新</th><th>操作</th>
+      <th></th>
+      <th>標題</th>
+      <th>截止日期</th>
+      <th>優先權</th>
+      <th>操作</th>
         </tr>
       </thead>
       <tbody id="inventory-body"></tbody>
@@ -440,60 +437,60 @@ body {
 <div id="toast-container"></div>
 <script>
 const STATE = {
-  items: [
-    { id: 1, name: "螺絲 M3x10", category: "工具", quantity: 250, minStock: 50, note: "常用規格", updatedAt: "2026-04-15" },
-    { id: 2, name: "PCB板 10x5cm", category: "電子元件", quantity: 8, minStock: 20, note: "庫存偏低", updatedAt: "2026-04-18" },
-    { id: 3, name: "紙箱 S號", category: "包裝", quantity: 120, minStock: 30, note: "", updatedAt: "2026-04-10" },
-    { id: 4, name: "鋁箔紙", category: "原料", quantity: 0, minStock: 5, note: "已用完", updatedAt: "2026-04-19" },
-  ],
+  items: {id:1, name:"整理房間", category:"高優先權", quantity:0, minStock:0, note:"", updatedAt:"2026-04-25", completed:true}, {id:2, name:"回覆 Email", category:"中優先權", quantity:0, minStock:0, note:"", updatedAt:"2026-04-22", completed:true}, {id:3, name:"購買食材", category:"低優先權", quantity:0, minStock:0, note:"", updatedAt:"2026-04-20", completed:true}, {id:4, name:"準備報告", category:"高優先權", quantity:0, minStock:0, note:"", updatedAt:"2026-04-28", completed:true},
   nextId: 5,
-  filter: { search: "", category: "", sort: "updatedAt-desc" },
+  filter: { search: "", category: "", sort: "completed-desc" },
   deleteTarget: null,
   editTarget: null,
 };
 
 function render() {
-  let items = STATE.items.filter(item => {
-    const matchSearch = !STATE.filter.search ||
-      item.name.toLowerCase().includes(STATE.filter.search.toLowerCase());
-    const matchCat = !STATE.filter.category || item.category === STATE.filter.category;
-    return matchSearch && matchCat;
-  });
-
-  const [sortField, sortDir] = STATE.filter.sort.split('-');
-  items.sort((a, b) => {
-    let va = a[sortField], vb = b[sortField];
-    if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
-    if (va < vb) return sortDir === 'asc' ? -1 : 1;
-    if (va > vb) return sortDir === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  const tbody = document.getElementById('inventory-body');
-  if (items.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">尚無庫存資料</td></tr>';
-    return;
+    let items = STATE.items.filter(item => {
+      const matchSearch = !STATE.filter.search ||
+        Object.values(item).join(' ').toLowerCase().includes(STATE.filter.search.toLowerCase());
+      const matchCat = !STATE.filter.category || item.category === STATE.filter.category;
+      return matchSearch && matchCat;
+    });
+  
+    const [sortField, sortDir] = STATE.filter.sort.split('-');
+    items.sort((a, b) => {
+      let va = a[sortField], vb = b[sortField];
+      if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  
+    const tbody = document.getElementById('inventory-body');
+    if (items.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">尚無資料</td></tr>';
+      return;
+    }
+    tbody.innerHTML = items.map(item => {
+      const cells = [
+        `<td><input type="checkbox" id="cb-${item.id}" onclick="toggleComplete(${item.id})" ${item.completed ? 'checked' : ''} /></td>`,
+        `<td>${item['title'] ?? ''}</td>`,
+        `<td>${item['dueDate'] ? new Date(item['dueDate']).toLocaleDateString('zh-TW') : ''}</td>`,
+        `<td>${_renderBadge(item['priority'], item)}</td>`,
+        `<td><div class="action-btns">${_renderActions(item)}</div></td>`,
+      ].join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
   }
-  tbody.innerHTML = items.map(item => {
-    const badge = item.quantity === 0 ? '<span class="badge badge-danger">缺貨</span>'
-      : item.quantity <= item.minStock ? '<span class="badge badge-warning">庫存不足</span>'
-      : '<span class="badge badge-ok">正常</span>';
-    const catClass = 'cat-' + item.category;
-    return `<tr>
-      <td>${item.name}</td>
-      <td><span class="category-tag ${catClass}">${item.category}</span></td>
-      <td>${item.quantity}</td>
-      <td>${badge}</td>
-      <td>${new Date(item.updatedAt).toLocaleDateString('zh-TW')}</td>
-      <td>
-        <div class="action-btns">
-          <button class="btn-edit" onclick="openEdit(${item.id})">編輯</button>
-          <button class="btn-delete" onclick="openDelete(${item.id})">刪除</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
 }
+
+function _renderBadge(value, item) {
+  if (value === undefined || value === null) return '';
+  const v = String(value);
+  if (v === '缺貨' || v === '0') return '<span class="badge badge-danger">缺貨</span>';
+  if (item.minStock !== undefined && item.quantity <= item.minStock) return '<span class="badge badge-warning">庫存不足</span>';
+  return '<span class="badge badge-ok">正常</span>';
+}
+
+function _renderActions(item) {
+  return `<button class="btn-edit" onclick="openEdit(${item.id})">編輯</button><button class="btn-delete" onclick="openDelete(${item.id})">刪除</button>`;
+}
+
 
 function openAdd() {
   STATE.editTarget = null;

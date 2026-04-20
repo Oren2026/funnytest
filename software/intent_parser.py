@@ -41,6 +41,67 @@ INTENT_MAP = {
 }
 
 
+def parse_schema(raw_text: str) -> list:
+    """
+    從 seed 文字中解析 <schema> 區塊，抽出每個欄位的
+    name、label、type，回傳 list[dict]。
+
+    支援格式：
+        <schema>
+            <field name="title"   label="標題"   type="string" />
+            <field name="status"  label="狀態"   type="enum"   />
+            <field name="count"   label="數量"   type="number" />
+        </schema>
+
+    若找不到 <schema> 區塊，回傳空列表。
+    """
+    schema_match = re.search(r"<schema>(.*?)</schema>", raw_text, re.DOTALL)
+    if not schema_match:
+        return []
+
+    schema_text = schema_match.group(1)
+    fields = []
+
+    # 匹配 <field name="..." label="..." type="..." />  （允許屬性順序任意）
+    for match in re.finditer(
+        r'<field\s+([^>]+)/?>',
+        schema_text,
+        re.DOTALL,
+    ):
+        attrs_text = match.group(1)
+        attrs = dict(re.findall(r'(\w+)=\"([^\"]+)\"', attrs_text))
+        if "name" in attrs:
+            fields.append({
+                "key":   attrs.get("name", ""),
+                "label": attrs.get("label", ""),
+                "type":  attrs.get("type",  "text"),
+            })
+
+    return fields
+
+
+def parse_items(raw_text):
+    import re
+    items = []
+    m = re.search(r'##\s*初始資料\s*\n((?:.+\n)*)', raw_text)
+    if not m:
+        return []
+    for line in m.group(1).split('\n'):
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        # Remove leading "- " or "- " or similar
+        line = re.sub(r"^-\s*", "", line)
+        parts = [p.strip() for p in line.split(',')]
+        if len(parts) >= 4:
+            name = parts[0].strip('"').strip("'")
+            due = parts[1].strip()
+            pri = parts[2].strip()
+            status = parts[3].strip()
+            completed = '完成' in status
+            items.append({'name': name, 'dueDate': due, 'priority': pri, 'completed': completed})
+    return items
+
 def parse_seed_theme(raw_text: str) -> str:
     """從原始文字抽出 theme 設定。"""
     m = re.search(r'<style\s+theme="([^"]+)"', raw_text)
@@ -96,6 +157,8 @@ def parse_intent(intent_text: str) -> dict:
         "intent_type": intent_type,
         "skills": list(skills_used),
         "name": app_name,
+        "schema": parse_schema(intent_text),
+        "items": parse_items(intent_text),
         "original": intent_text,
     }
 

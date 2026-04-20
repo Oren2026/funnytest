@@ -10,6 +10,95 @@ from pathlib import Path
 SKILLS_BASE = Path(__file__).parent.parent / "skills"
 
 
+def _build_dynamic_table_html(schema: List[Dict]) -> tuple:
+    """
+    Build dynamic <thead> and render() JS from a column schema.
+
+    Each schema entry: { key, label, type }
+    Supported types: checkbox | text | badge | action | date
+
+    Returns (thead_html, render_fn_js).
+    """
+    # Build <thead> cells
+    th_cells = []
+    for col in schema:
+        th_cells.append(f"      <th>{col['label']}</th>")
+    thead_html = "      <thead>\n        <tr>\n" + "\n".join(th_cells) + "\n        </tr>\n      </thead>"
+
+    # Build column-span for empty state
+    col_count = len(schema)
+
+    # Build render() function dynamically
+    render_body_lines = [
+        "  let items = STATE.items.filter(item => {",
+        "    const matchSearch = !STATE.filter.search ||",
+        "      Object.values(item).join(' ').toLowerCase().includes(STATE.filter.search.toLowerCase());",
+        "    const matchCat = !STATE.filter.category || item.category === STATE.filter.category;",
+        "    return matchSearch && matchCat;",
+        "  });",
+        "",
+        "  const [sortField, sortDir] = STATE.filter.sort.split('-');",
+        "  items.sort((a, b) => {",
+        "    let va = a[sortField], vb = b[sortField];",
+        "    if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }",
+        "    if (va < vb) return sortDir === 'asc' ? -1 : 1;",
+        "    if (va > vb) return sortDir === 'asc' ? 1 : -1;",
+        "    return 0;",
+        "  });",
+        "",
+        "  const tbody = document.getElementById('inventory-body');",
+        f"  if (items.length === 0) {{",
+        f"    tbody.innerHTML = '<tr><td colspan=\"{col_count}\" class=\"empty-state\">尚無資料</td></tr>';",
+        "    return;",
+        "  }",
+        "  tbody.innerHTML = items.map(item => {",
+    ]
+
+    # Build per-column cell rendering in array form
+    render_body_lines.append("    const cells = [")
+    for col in schema:
+        key = col["key"]
+        col_type = col.get("type", "text")
+        if col_type == "checkbox":
+            render_body_lines.append(f"      `<td><input type=\"checkbox\" id=\"cb-${{item.id}}\" onclick=\"toggleComplete(${{item.id}})\" ${{item.completed ? 'checked' : ''}} /></td>`,")
+        elif col_type == "text":
+            render_body_lines.append(f"      `<td>${{item['{key}'] ?? ''}}</td>`,")
+        elif col_type == "badge":
+            render_body_lines.append(f"      `<td>${{_renderBadge(item['{key}'], item)}}</td>`,")
+        elif col_type == "action":
+            render_body_lines.append(f"      `<td><div class=\"action-btns\">${{_renderActions(item)}}</div></td>`,")
+        elif col_type == "date":
+            render_body_lines.append(f"      `<td>${{item['{key}'] ? new Date(item['{key}']).toLocaleDateString('zh-TW') : ''}}</td>`,")
+        else:
+            render_body_lines.append(f"      `<td>${{item['{key}'] ?? ''}}</td>`,")
+    render_body_lines.append("    ].join('');")
+
+    render_body_lines.extend([
+        "    return `<tr>${cells}</tr>`;",
+        "  }).join('');",
+        "}",
+    ])
+
+    # Helper functions for badge and action types
+    helpers = """
+function _renderBadge(value, item) {
+  if (value === undefined || value === null) return '';
+  const v = String(value);
+  if (v === '缺貨' || v === '0') return '<span class="badge badge-danger">缺貨</span>';
+  if (item.minStock !== undefined && item.quantity <= item.minStock) return '<span class="badge badge-warning">庫存不足</span>';
+  return '<span class="badge badge-ok">正常</span>';
+}
+
+function _renderActions(item) {
+  return `<button class="btn-edit" onclick="openEdit(${item.id})">編輯</button><button class="btn-delete" onclick="openDelete(${item.id})">刪除</button>`;
+}
+"""
+
+    render_js = "function render() {\n" + "\n".join("  " + line for line in render_body_lines) + "\n}\n" + helpers
+
+    return thead_html, render_js, col_count
+
+
 def compile_html(skills_used: List[str], intent_data: Dict) -> str:
     """將技能列表編譯成完整 HTML 頁面。"""
 
@@ -26,27 +115,47 @@ def compile_html(skills_used: List[str], intent_data: Dict) -> str:
         if block.get("js"):
             js_parts.append(block["js"])
 
-    # 建構完整頁面
-    # Inject toolbar with search + filter + sort
-    toolbar_html = '''<div class="toolbar">
-  <div class="search-box">
-    <input type="text" id="search-input" placeholder="搜尋名稱..." oninput="handleSearch(this.value)" />
-  </div>
-  <div class="filter-group">
-    <select id="filter-category" onchange="handleFilter(this.value)">
+    # Build dynamic table from schema (default fallback if no schema)
+    schema = intent_data.get("schema", [
+        {"key": "name", "label": "名稱", "type": "text"},
+        {"key": "category", "label": "分類", "type": "text"},
+        {"key": "quantity", "label": "數量", "type": "text"},
+        {"key": "status", "label": "狀態", "type": "badge"},
+        {"key": "updatedAt", "label": "最後更新", "type": "date"},
+        {"key": "actions", "label": "操作", "type": "action"},
+    ])
+
+    dynamic_thead, dynamic_render, col_count = _build_dynamic_table_html(schema)
+
+    # Build sort options dynamically from schema text/date columns
+    sort_options = ""
+    for col in schema:
+        if col.get("type") in ("text", "date", "number"):
+            sort_options += f'      <option value="{col["key"]}-asc">{col["label"]} ↑</option>\n'
+            sort_options += f'      <option value="{col["key"]}-desc">{col["label"]} ↓</option>\n'
+
+    # Toolbar — filter category only if a "category" column exists
+    category_col_exists = any(c.get("key") == "category" for c in schema)
+    filter_html = ""
+    if category_col_exists:
+        filter_html = '''    <select id="filter-category" onchange="handleFilter(this.value)">
       <option value="">全部分類</option>
       <option value="電子元件">電子元件</option>
       <option value="工具">工具</option>
       <option value="原料">原料</option>
       <option value="包裝">包裝</option>
     </select>
-    <select id="sort-by" onchange="handleSort(this.value)">
-      <option value="updatedAt-desc">最近更新</option>
-      <option value="name-asc">名稱 A-Z</option>
-      <option value="name-desc">名稱 Z-A</option>
-      <option value="quantity-asc">數量 ↑</option>
-      <option value="quantity-desc">數量 ↓</option>
-    </select>
+    '''
+    else:
+        filter_html = '    <select id="filter-category" style="display:none"></select>\n'
+
+    toolbar_html = f'''<div class="toolbar">
+  <div class="search-box">
+    <input type="text" id="search-input" placeholder="搜尋..." oninput="handleSearch(this.value)" />
+  </div>
+  <div class="filter-group">
+{filter_html}    <select id="sort-by" onchange="handleSort(this.value)">
+{      sort_options}    </select>
   </div>
 </div>'''
 
@@ -107,63 +216,20 @@ def compile_html(skills_used: List[str], intent_data: Dict) -> str:
 
     toast_container = '<div id="toast-container"></div>'
 
-    # Main app JS
+    # Pre-compute for safe string insertion
+    default_sort = (schema[0]["key"] if schema else "updatedAt") + "-desc"
+
+    # Main app JS — use %s placeholder to avoid f-string brace-escaping issues with JS code
     app_js = '''<script>
 const STATE = {
-  items: [
-    { id: 1, name: "螺絲 M3x10", category: "工具", quantity: 250, minStock: 50, note: "常用規格", updatedAt: "2026-04-15" },
-    { id: 2, name: "PCB板 10x5cm", category: "電子元件", quantity: 8, minStock: 20, note: "庫存偏低", updatedAt: "2026-04-18" },
-    { id: 3, name: "紙箱 S號", category: "包裝", quantity: 120, minStock: 30, note: "", updatedAt: "2026-04-10" },
-    { id: 4, name: "鋁箔紙", category: "原料", quantity: 0, minStock: 5, note: "已用完", updatedAt: "2026-04-19" },
-  ],
+  items: @ITEMS@,
   nextId: 5,
-  filter: { search: "", category: "", sort: "updatedAt-desc" },
+  filter: { search: "", category: "", sort: "%%SORT%%" },
   deleteTarget: null,
   editTarget: null,
 };
 
-function render() {
-  let items = STATE.items.filter(item => {
-    const matchSearch = !STATE.filter.search ||
-      item.name.toLowerCase().includes(STATE.filter.search.toLowerCase());
-    const matchCat = !STATE.filter.category || item.category === STATE.filter.category;
-    return matchSearch && matchCat;
-  });
-
-  const [sortField, sortDir] = STATE.filter.sort.split('-');
-  items.sort((a, b) => {
-    let va = a[sortField], vb = b[sortField];
-    if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
-    if (va < vb) return sortDir === 'asc' ? -1 : 1;
-    if (va > vb) return sortDir === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  const tbody = document.getElementById('inventory-body');
-  if (items.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">尚無庫存資料</td></tr>';
-    return;
-  }
-  tbody.innerHTML = items.map(item => {
-    const badge = item.quantity === 0 ? '<span class="badge badge-danger">缺貨</span>'
-      : item.quantity <= item.minStock ? '<span class="badge badge-warning">庫存不足</span>'
-      : '<span class="badge badge-ok">正常</span>';
-    const catClass = 'cat-' + item.category;
-    return `<tr>
-      <td>${item.name}</td>
-      <td><span class="category-tag ${catClass}">${item.category}</span></td>
-      <td>${item.quantity}</td>
-      <td>${badge}</td>
-      <td>${new Date(item.updatedAt).toLocaleDateString('zh-TW')}</td>
-      <td>
-        <div class="action-btns">
-          <button class="btn-edit" onclick="openEdit(${item.id})">編輯</button>
-          <button class="btn-delete" onclick="openDelete(${item.id})">刪除</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
+''' + dynamic_render + '''
 
 function openAdd() {
   STATE.editTarget = null;
@@ -248,6 +314,20 @@ render();
     # 載入主題 CSS
     theme_css = load_theme_css(theme)
     base_css = "* { margin: 0; padding: 0; box-sizing: border-box; }\nbody { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }\n"
+    # Generate items JS from parsed seed data
+    items_list = intent_data.get('items', [])
+    if items_list:
+        items_js = ', '.join(
+            '{id:' + str(i+1) + ', name:"' + item.get('name','') + '", category:"' +
+            item.get('priority','') + '", quantity:0, minStock:0, note:"", updatedAt:"' +
+            item.get('dueDate','') + '", completed:' + str(item.get('completed',False)).lower() + '}'
+            for i, item in enumerate(items_list)
+        )
+        app_js = app_js.replace('@ITEMS@', items_js)
+    else:
+        app_js = app_js.replace('@ITEMS@', '{id:1,name:"範例項目",category:"一般",quantity:0,minStock:0,note:"",updatedAt:"2026-04-20"}')
+
+    app_js = app_js.replace('%%SORT%%', default_sort)
     page = f'''<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -276,11 +356,7 @@ render();
 <main style="padding: 24px;">
   <div class="inventory-table-wrapper">
     <table class="inventory-table">
-      <thead>
-        <tr>
-          <th>名稱</th><th>分類</th><th>數量</th><th>狀態</th><th>最後更新</th><th>操作</th>
-        </tr>
-      </thead>
+{dynamic_thead}
       <tbody id="inventory-body"></tbody>
     </table>
   </div>

@@ -2,6 +2,13 @@
 <name>代辦事項清單</name>
 <type>單頁應用</type>
 <style theme="glass" />
+<schema>
+  <field name="completed" label="" type="checkbox" />
+  <field name="title" label="標題" type="text" />
+  <field name="dueDate" label="截止日期" type="date" />
+  <field name="priority" label="優先權" type="badge" />
+  <field name="actions" label="操作" type="action" />
+</schema>
 
 ## 意圖
 我要一個代辦事項清單，包含新增、刪除、完成標記和關鍵字搜尋功能。
