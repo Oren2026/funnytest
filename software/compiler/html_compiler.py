@@ -92,8 +92,16 @@ function _renderBadge(value, item) {
 function _renderActions(item) {
   return `<button class="btn-edit" onclick="openEdit(${item.id})">編輯</button><button class="btn-delete" onclick="openDelete(${item.id})">刪除</button>`;
 }
-"""
 
+function toggleComplete(id) {
+  const item = STATE.items.find(x => x.id === id);
+  if (item) {
+    item.completed = !item.completed;
+    showToast(item.completed ? '已完成' : '已取消完成', 'success');
+    render();
+  }
+}
+"""
     render_js = "function render() {\n" + "\n".join("  " + line for line in render_body_lines) + "\n}\n" + helpers
 
     return thead_html, render_js, col_count
