@@ -6,7 +6,8 @@ html_compiler.py — HTML/CSS/JS 編譯器
 
 from typing import List, Dict
 
-SKILLS_DIR = "skills/ui"
+from pathlib import Path
+SKILLS_BASE = Path(__file__).parent.parent / "skills"
 
 
 def compile_html(skills_used: List[str], intent_data: Dict) -> str:
@@ -302,9 +303,9 @@ def load_skill_blocks(skill_names: List[str]) -> List[Dict]:
     blocks = []
     for name in skill_names:
         # Try ui dir first
-        matches = glob.glob(f"skills/ui/{name}.skill", recursive=False)
+        matches = glob.glob(str(SKILLS_BASE / "ui" / f"{name}.skill"))
         if not matches:
-            matches = glob.glob(f"skills/ui/**/{name}.skill", recursive=True)
+            matches = glob.glob(str(SKILLS_BASE / "ui" / "**" / f"{name}.skill"), recursive=True)
         if matches:
             blocks.append(parse_skill_file(matches[0]))
     return blocks
@@ -361,7 +362,7 @@ def load_theme_css(theme: str) -> str:
     """根據主題名載入對應 CSS。"""
     skill_name = THEME_MAP.get(theme, "theme-glass")
     import glob
-    matches = glob.glob(f"skills/styles/{skill_name}.skill")
+    matches = glob.glob(str(SKILLS_BASE / "styles" / f"{skill_name}.skill"))
     if not matches:
         return ""
     block = {"html": "", "style": "", "js": ""}

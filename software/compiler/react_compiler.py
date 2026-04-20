@@ -6,6 +6,8 @@ react_compiler.py — React 元件編譯器
 
 from typing import Dict
 import glob
+from pathlib import Path
+SKILLS_BASE = Path(__file__).parent.parent / "skills"
 
 
 def compile_react(skills_used: list, intent_data: Dict) -> str:
@@ -169,9 +171,9 @@ export default function WarehouseApp() {{
 def load_skill_blocks(skill_names: list) -> list:
     blocks = []
     for name in skill_names:
-        matches = glob.glob(f"skills/ui/{name}.skill", recursive=False)
+        matches = glob.glob(str(SKILLS_BASE / "ui" / f"{name}.skill"))
         if not matches:
-            matches = glob.glob(f"skills/ui/**/{name}.skill", recursive=True)
+            matches = glob.glob(str(SKILLS_BASE / "ui" / "**" / f"{name}.skill"), recursive=True)
         if matches:
             blocks.append(parse_skill_file(matches[0]))
     return blocks
