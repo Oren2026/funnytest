@@ -40,6 +40,15 @@ INTENT_MAP = {
 }
 
 
+def parse_seed_theme(raw_text: str) -> str:
+    """從原始文字抽出 theme 設定。"""
+    import re
+    m = re.search(r'<style\s+theme="([^"]+)"', raw_text)
+    if m:
+        return m.group(1)
+    return "glass"
+
+
 def parse_intent(intent_text: str) -> dict:
     """分析自然語意，回傳解析後的結構。"""
 
@@ -84,6 +93,7 @@ def synthesize(intent_text: str, target: str) -> str:
 
     parsed = parse_intent(intent_text)
     skills = parsed["skills"]
+    parsed["theme"] = parse_seed_theme(intent_text)
 
     if target == "html":
         return compile_html(skills, parsed)

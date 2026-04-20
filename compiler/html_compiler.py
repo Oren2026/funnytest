@@ -12,7 +12,7 @@ SKILLS_DIR = "skills/ui"
 def compile_html(skills_used: List[str], intent_data: Dict) -> str:
     """將技能列表編譯成完整 HTML 頁面。"""
 
-    # 收集所有需要的 skill code
+    theme = intent_data.get("theme", "glass")
     skill_blocks = load_skill_blocks(skills_used)
 
     html_parts = []
@@ -244,6 +244,9 @@ function showToast(message, type) {
 render();
 </script>'''
 
+    # 載入主題 CSS
+    theme_css = load_theme_css(theme)
+    base_css = "* { margin: 0; padding: 0; box-sizing: border-box; }\nbody { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }\n"
     page = f'''<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -251,9 +254,9 @@ render();
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>倉儲管理系統</title>
 <style>
-* {{ margin: 0; padding: 0; box-sizing: border-box; }}
-body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #334155; }}
+{base_css}
 {merge_css(css_parts)}
+{theme_css}
 </style>
 </head>
 <body>
@@ -344,3 +347,36 @@ def merge_css(css_parts: List[str]) -> str:
             else:
                 lines.append(line)
     return "\n".join(lines)
+
+
+THEME_MAP = {
+    "glass": "theme-glass",
+    "modern": "theme-modern",
+    "brutal": "theme-brutal",
+    "soft": "theme-soft",
+}
+
+
+def load_theme_css(theme: str) -> str:
+    """根據主題名載入對應 CSS。"""
+    skill_name = THEME_MAP.get(theme, "theme-glass")
+    import glob
+    matches = glob.glob(f"skills/styles/{skill_name}.skill")
+    if not matches:
+        return ""
+    block = {"html": "", "style": "", "js": ""}
+    current = None
+    with open(matches[0], "r", encoding="utf-8") as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped.startswith("[html]"):
+                current = None
+            elif stripped.startswith("[react]"):
+                current = None
+            elif stripped.startswith("[style]"):
+                current = "style"
+            elif stripped.startswith("[js]"):
+                current = None
+            elif current == "style":
+                block["style"] += line
+    return block["style"]
