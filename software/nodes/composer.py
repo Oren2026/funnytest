@@ -1,4 +1,5 @@
 """節點 5：Composer（組合器）"""
+import re
 from typing import List, Dict
 from pathlib import Path
 
@@ -238,8 +239,9 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
         modal_html = _inject_form_into_modal(modal_html, form_html)
 
     # --- Build action buttons (injected into header slot) ---
-    page_title = (profile.context or "應用程式")[:50]
-    page_header = (profile.context or "應用程式")[:30]
+    entity_name = (profile.entities[0] if profile.entities else "應用程式")
+    page_title = entity_name + " - " + (profile.context or "")[:40]
+    page_header = entity_name
     add_button = f'<button class="btn-primary" onclick="openAdd()">+ 新增</button>'
 
     # --- Inject into layout-page slots ---
@@ -255,6 +257,13 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
     page_html = _inject_slot(page_html, "actions", add_button)
 
     # --- Inject page title into header ---
+    # Replace in span content (handle both warehouse title and any existing title)
+    page_html = re.sub(
+        r'(<span class="header-title">)[^<]*(</span>)',
+        r'\1📦 ' + page_header + r'\2',
+        page_html
+    )
+    # Fallback: text replacement
     page_html = page_html.replace("倉儲管理系統", page_header)
     page_html = page_html.replace("📦 倉儲管理系統", "📦 " + page_header)
 
@@ -274,8 +283,23 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
     default_sort = (schema[0]["name"] if schema else "id") + "-desc"
 
     # --- Full app JS ---
+    storage_key = "evcompiler_" + page_title.replace(" ", "_").lower()[:20]
     app_js = (
         "<script>\n"
+        "var STATE_KEY = '" + storage_key + "';\n"
+        "function saveState() {\n"
+        "  try { localStorage.setItem(STATE_KEY, JSON.stringify({ items: STATE.items, nextId: STATE.nextId })); } catch(e) {}\n"
+        "}\n"
+        "function loadState() {\n"
+        "  try {\n"
+        "    var saved = localStorage.getItem(STATE_KEY);\n"
+        "    if (saved) {\n"
+        "      var data = JSON.parse(saved);\n"
+        "      STATE.items = data.items || [];\n"
+        "      STATE.nextId = data.nextId || 1;\n"
+        "    }\n"
+        "  } catch(e) {}\n"
+        "}\n"
         "const STATE = {\n"
         "  items: [],\n"
         "  nextId: 1,\n"
@@ -283,6 +307,7 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
         "  deleteTarget: null,\n"
         "  editTarget: null,\n"
         "};\n"
+        "loadState();\n"
         "\n"
         + open_add_js + "\n\n"
         + open_edit_js + "\n\n"
@@ -312,6 +337,7 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
         "function doDelete() {\n"
         "  if (STATE.deleteTarget === null) return;\n"
         "  STATE.items = STATE.items.filter(function(x) { return x.id !== STATE.deleteTarget; });\n"
+        "  saveState();\n"
         "  closeConfirm();\n"
         "  showToast('已刪除', 'info');\n"
         "  render();\n"
@@ -352,6 +378,7 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
         "    STATE.items.push(data);\n"
         "    showToast('已新增', 'success');\n"
         "  }\n"
+        "  saveState();\n"
         "  closeModal();\n"
         "  render();\n"
         "});\n\n"
@@ -426,7 +453,6 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
 
 def _inject_slot(html: str, slot_name: str, content: str) -> str:
     """Replace <tag data-slot="name"> or data-slot="name" with content."""
-    import re
     # Match: data-slot="slot_name" — replace the element's inner content or the attribute value
     pattern = r'(<[^>]*\sdata-slot="' + re.escape(slot_name) + r'"[^>]*>)[^<]*(</[^>]+>)'
     repl = r'\1' + content + r'\2'
@@ -442,7 +468,6 @@ def _inject_slot(html: str, slot_name: str, content: str) -> str:
 
 def _inject_form_into_modal(modal_html: str, form_html: str) -> str:
     """Replace the <form> inside modal-form with schema-driven form."""
-    import re
     # Replace the entire <form ...>...</form> block
     result, n = re.subn(r'<form[^>]*>.*?</form>', form_html, modal_html, flags=re.DOTALL)
     if n:

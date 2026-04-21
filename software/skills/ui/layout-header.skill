@@ -7,7 +7,7 @@
   <div class="header-left">
     <span class="header-title">📦 倉儲管理系統</span>
   </div>
-  <div class="header-actions" data-actions="slot">
+  <div class="header-actions" data-slot="actions">
   </div>
 </header>
 
