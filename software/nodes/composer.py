@@ -152,7 +152,7 @@ def _build_dynamic_table_html(schema: List[Dict]) -> tuple:
         else:
             thead_cells.append('<th>' + label + '</th>')
 
-    thead_html = "<thead><tr>" + "".join(thead_cells) + "</tr></thead>"
+    thead_rows_html = "<tr>" + "".join(thead_cells) + "</tr>"
 
     render_cases = []
     for col in schema:
@@ -176,7 +176,7 @@ def _build_dynamic_table_html(schema: List[Dict]) -> tuple:
         else:
             render_cases.append('    case "' + key + '": return `<td>${item.' + key + '}</td>`;')
 
-    return thead_html, "\n".join(render_cases)
+    return thead_rows_html, "\n".join(render_cases)
 
 
 def compose_output(
@@ -226,7 +226,7 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
 
     # --- Inject form fields into modal-form ---
     if modal_html and form_html:
-        modal_html = _inject_form_into_modal(modal_html, form_html)
+        modal_html = _inject_slot(modal_html, "form-fields", form_html)
 
     # --- Build action buttons (injected into header slot) ---
     entity_name = (profile.entities[0] if profile.entities else "應用程式")
@@ -234,11 +234,15 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
     page_header = entity_name
     add_button = f'<button class="btn-primary" onclick="openAdd()">+ 新增</button>'
 
+    # --- Build thead with schema (before injecting into page) ---
+    table_with_schema = table_html or _fallback_table()
+    table_with_schema = _inject_slot(table_with_schema, "thead", thead_html)
+
     # --- Inject into layout-page slots ---
     page_html = page_layout or _fallback_page_layout()
     page_html = _inject_slot(page_html, "header", header_html)
     page_html = _inject_slot(page_html, "search", search_html)
-    page_html = _inject_slot(page_html, "content", table_html)
+    page_html = _inject_slot(page_html, "content", table_with_schema)
     page_html = _inject_slot(page_html, "modal", modal_html or _fallback_modal())
     page_html = _inject_slot(page_html, "confirm", confirm_html or _fallback_confirm())
     page_html = _inject_slot(page_html, "toast", toast_html or _fallback_toast())
@@ -256,10 +260,6 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
     # Fallback: text replacement
     page_html = page_html.replace("倉儲管理系統", page_header)
     page_html = page_html.replace("📦 倉儲管理系統", "📦 " + page_header)
-
-    # --- Build thead with schema ---
-    table_with_schema = table_html or _fallback_table()
-    table_with_schema = _inject_slot(table_with_schema, "thead", thead_html)
 
     # --- Build search input JS hook ---
     search_input_js = (
@@ -442,17 +442,15 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
 
 
 def _inject_slot(html: str, slot_name: str, content: str) -> str:
-    """Replace <tag data-slot="name"> or data-slot="name" with content."""
-    # Match: data-slot="slot_name" — replace the element's inner content or the attribute value
-    pattern = r'(<[^>]*\sdata-slot="' + re.escape(slot_name) + r'"[^>]*>)[^<]*(</[^>]+>)'
-    repl = r'\1' + content + r'\2'
-    result, n = re.subn(pattern, repl, html)
+    """Replace <!-- slot:NAME --> comment marker with content."""
+    marker = f'<!-- slot:{slot_name} -->'
+    if marker in html:
+        return html.replace(marker, content)
+    # Fallback: look for data-slot attribute
+    pattern = r'(<[^>]*\sdata-slot="' + re.escape(slot_name) + r'"[^>]*>)'
+    result, n = re.subn(pattern, r'\1' + content, html)
     if n:
         return result
-    # Fallback: replace the data-slot attribute marker with the content appended
-    fallback = f'data-slot="{slot_name}"'
-    if fallback in html:
-        return html.replace(fallback, f'data-slot="{slot_name}">{content}')
     return html
 
 

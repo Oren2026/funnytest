@@ -9,9 +9,7 @@
       <h3 id="modal-title">新增項目</h3>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
-    <form id="inventory-form" class="modal-form" data-slot="form-fields">
-      <!-- schema-driven form fields injected here -->
-    </form>
+    <form id="inventory-form" class="modal-form"><!-- slot:form-fields --></form>
   </div>
 </div>
 

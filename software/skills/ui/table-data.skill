@@ -5,18 +5,8 @@
 [html]
 <div class="inventory-table-wrapper">
   <table class="inventory-table">
-    <thead>
-      <tr>
-        <th>名稱</th>
-        <th>分類</th>
-        <th>數量</th>
-        <th>狀態</th>
-        <th>最後更新</th>
-        <th>操作</th>
-      </tr>
-    </thead>
-    <tbody id="inventory-body">
-    </tbody>
+    <thead><!-- slot:thead --></thead>
+    <tbody id="inventory-body"><!-- slot:tbody --></tbody>
   </table>
 </div>
 
