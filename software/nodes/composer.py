@@ -20,11 +20,13 @@ def load_skill_blocks(skill_name: str, section: str = "html") -> str:
             if start == -1:
                 tag = "[" + section.upper() + "]"
                 start = content.find(tag)
-            if start != -1:
-                end = content.find("[/", start)
-                if end != -1:
-                    return content[start + len(tag):end].strip()
-            return ""
+            if start == -1:
+                return ""
+            # Section ends at next [section] marker or end of file
+            end = content.find("\n[", start + 1)
+            if end == -1:
+                end = len(content)
+            return content[start + len(tag):end].strip()
     return ""
 
 
@@ -206,10 +208,10 @@ def compose_output(
 
 
 def _compose_html(skills_used, schema, profile, warnings) -> Dict:
-    """Compose HTML output."""
+    """Compose HTML output by loading skill blocks and injecting schema-driven content."""
+    # --- Load CSS from all skills ---
     all_css = []
     theme_css = ""
-
     for skill in skills_used:
         css = load_skill_blocks(skill, "style")
         if css:
@@ -218,11 +220,60 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
             else:
                 all_css.append(css)
 
+    # --- Load [html] blocks from key skills ---
+    header_html   = load_skill_blocks("layout-header", "html")
+    search_html   = load_skill_blocks("search-bar", "html")
+    table_html    = load_skill_blocks("table-data", "html")
+    modal_html    = load_skill_blocks("modal-form", "html")
+    confirm_html  = load_skill_blocks("confirm-dialog", "html")
+    toast_html    = load_skill_blocks("toast-notify", "html")
+    page_layout   = load_skill_blocks("layout-page", "html")
+
+    # --- Schema-driven content generation ---
     form_html, open_add_js, open_edit_js, submit_data_js = _build_form_from_schema(schema)
     thead_html, render_cases_js = _build_dynamic_table_html(schema)
 
+    # --- Inject form fields into modal-form ---
+    if modal_html and form_html:
+        modal_html = _inject_form_into_modal(modal_html, form_html)
+
+    # --- Build action buttons (injected into header slot) ---
+    page_title = (profile.context or "應用程式")[:50]
+    page_header = (profile.context or "應用程式")[:30]
+    add_button = f'<button class="btn-primary" onclick="openAdd()">+ 新增</button>'
+
+    # --- Inject into layout-page slots ---
+    page_html = page_layout or _fallback_page_layout()
+    page_html = _inject_slot(page_html, "header", header_html)
+    page_html = _inject_slot(page_html, "search", search_html)
+    page_html = _inject_slot(page_html, "content", table_html)
+    page_html = _inject_slot(page_html, "modal", modal_html or _fallback_modal())
+    page_html = _inject_slot(page_html, "confirm", confirm_html or _fallback_confirm())
+    page_html = _inject_slot(page_html, "toast", toast_html or _fallback_toast())
+
+    # --- Inject header actions slot ---
+    page_html = _inject_slot(page_html, "actions", add_button)
+
+    # --- Inject page title into header ---
+    page_html = page_html.replace("倉儲管理系統", page_header)
+    page_html = page_html.replace("📦 倉儲管理系統", "📦 " + page_header)
+
+    # --- Build thead with schema ---
+    table_with_schema = table_html or _fallback_table()
+    table_with_schema = _inject_slot(table_with_schema, "thead", thead_html)
+
+    # --- Build search input JS hook ---
+    search_input_js = (
+        "document.getElementById('search-input').addEventListener('input', function(e) {\n"
+        "  STATE.filter.search = e.target.value;\n"
+        "  render();\n"
+        "});\n"
+    )
+
+    # --- Default sort ---
     default_sort = (schema[0]["name"] if schema else "id") + "-desc"
 
+    # --- Full app JS ---
     app_js = (
         "<script>\n"
         "const STATE = {\n"
@@ -233,77 +284,67 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
         "  editTarget: null,\n"
         "};\n"
         "\n"
-        + open_add_js + "\n"
-        "\n"
-        + open_edit_js + "\n"
-        "\n"
+        + open_add_js + "\n\n"
+        + open_edit_js + "\n\n"
         "function closeModal() {\n"
-        "  document.getElementById('form-modal').style.display = 'none';\n"
+        "  var m = document.getElementById('form-modal');\n"
+        "  if (m) m.style.display = 'none';\n"
         "  STATE.editTarget = null;\n"
-        "}\n"
-        "\n"
+        "}\n\n"
         "function openDelete(id) {\n"
         "  STATE.deleteTarget = id;\n"
-        "  const item = STATE.items.find(x => x.id === id);\n"
-        "  document.getElementById('confirm-title').textContent = '確認刪除？';\n"
-        "  document.getElementById('confirm-message').textContent = '此操作無法撤銷';\n"
-        "  document.getElementById('form-modal').style.display = 'none';\n"
-        "  document.getElementById('confirm-overlay').style.display = 'flex';\n"
-        "}\n"
-        "\n"
+        "  var confirmEl = document.getElementById('confirm-overlay');\n"
+        "  if (confirmEl) {\n"
+        "    var titleEl = document.getElementById('confirm-title');\n"
+        "    var msgEl = document.getElementById('confirm-message');\n"
+        "    if (titleEl) titleEl.textContent = '確認刪除？';\n"
+        "    if (msgEl) msgEl.textContent = '此操作無法撤銷';\n"
+        "    confirmEl.style.display = 'flex';\n"
+        "  }\n"
+        "  var modalEl = document.getElementById('form-modal');\n"
+        "  if (modalEl) modalEl.style.display = 'none';\n"
+        "}\n\n"
         "function closeConfirm() {\n"
-        "  document.getElementById('confirm-overlay').style.display = 'none';\n"
+        "  var confirmEl = document.getElementById('confirm-overlay');\n"
+        "  if (confirmEl) confirmEl.style.display = 'none';\n"
         "  STATE.deleteTarget = null;\n"
-        "}\n"
-        "\n"
+        "}\n\n"
         "function doDelete() {\n"
         "  if (STATE.deleteTarget === null) return;\n"
-        "  STATE.items = STATE.items.filter(x => x.id !== STATE.deleteTarget);\n"
+        "  STATE.items = STATE.items.filter(function(x) { return x.id !== STATE.deleteTarget; });\n"
         "  closeConfirm();\n"
         "  showToast('已刪除', 'info');\n"
         "  render();\n"
-        "}\n"
-        "\n"
+        "}\n\n"
         "function showToast(message, type) {\n"
-        "  const c = document.getElementById('toast-container');\n"
-        "  const t = document.createElement('div');\n"
+        "  var c = document.getElementById('toast-container');\n"
+        "  if (!c) return;\n"
+        "  var t = document.createElement('div');\n"
         "  t.className = 'toast toast-' + (type || 'info');\n"
         "  t.textContent = message;\n"
         "  c.appendChild(t);\n"
         "  setTimeout(function() { t.remove(); }, 3000);\n"
-        "}\n"
-        "\n"
-        "function toggleComplete(id) {\n"
-        "  const item = STATE.items.find(x => x.id === id);\n"
-        "  if (item) {\n"
-        "    item.completed = !item.completed;\n"
-        "    showToast(item.completed ? '已完成' : '已取消完成', item.completed ? 'success' : 'info');\n"
-        "    render();\n"
-        "  }\n"
-        "}\n"
-        "\n"
+        "}\n\n"
         "function _renderBadge(value, item) {\n"
         "  if (value === undefined || value === null) return '';\n"
-        "  const v = String(value);\n"
+        "  var v = String(value);\n"
         "  if (v === '高') return '<span class=\"badge badge-danger\">高</span>';\n"
         "  if (v === '中') return '<span class=\"badge badge-info\">中</span>';\n"
         "  if (v === '低') return '<span class=\"badge badge-ok\">低</span>';\n"
         "  return '<span class=\"badge\">' + v + '</span>';\n"
-        "}\n"
-        "\n"
+        "}\n\n"
         "function _renderActions(item) {\n"
-        "  return '<button class=\"btn-edit\" onclick=\"openEdit(' + item.id + ')\">編輯</button>"
-        "<button class=\"btn-delete\" onclick=\"openDelete(' + item.id + ')\">刪除</button>';\n"
-        "}\n"
-        "\n"
+        "  return '<button class=\"btn-edit\" onclick=\"openEdit(' + item.id + ')\">編輯</button>'\n"
+        "    + '<button class=\"btn-delete\" onclick=\"openDelete(' + item.id + ')\">刪除</button>';\n"
+        "}\n\n"
         "document.getElementById('inventory-form').addEventListener('submit', function(e) {\n"
         "  e.preventDefault();\n"
-        "  const data = {\n"
+        "  var data = {\n"
         + submit_data_js + "\n"
         "  };\n"
-        "  const editId = document.getElementById('edit-id').value;\n"
+        "  var editId = document.getElementById('edit-id').value;\n"
         "  if (editId) {\n"
-        "    const idx = STATE.items.findIndex(x => x.id === parseInt(editId));\n"
+        "    var idx = STATE.items.findIndex(function(x) { return x.id === parseInt(editId); });\n"
         "    if (idx !== -1) STATE.items[idx] = Object.assign({}, STATE.items[idx], data);\n"
         "    showToast('已更新', 'success');\n"
         "  } else {\n"
@@ -313,12 +354,12 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
         "  }\n"
         "  closeModal();\n"
         "  render();\n"
-        "});\n"
-        "\n"
+        "});\n\n"
         "function render() {\n"
-        "  const tbody = document.querySelector('#data-table tbody');\n"
-        "  const search = STATE.filter.search.toLowerCase();\n"
-        "  let items = STATE.items.filter(function(item) {\n"
+        "  var tbody = document.querySelector('#data-table tbody');\n"
+        "  if (!tbody) return;\n"
+        "  var search = STATE.filter.search.toLowerCase();\n"
+        "  var items = STATE.items.filter(function(item) {\n"
         "    if (!search) return true;\n"
         "    return Object.values(item).some(function(v) { return String(v).toLowerCase().includes(search); });\n"
         "  });\n"
@@ -331,10 +372,10 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
         "    var cmp = va < vb ? -1 : va > vb ? 1 : 0;\n"
         "    return dir === 'asc' ? cmp : -cmp;\n"
         "  });\n"
+        "  var schemaFields = " + _get_schema_json(schema) + ";\n"
         "  tbody.innerHTML = items.map(function(item) {\n"
         "    var completed = item.completed ? ' todo-completed' : '';\n"
         "    var cells = [];\n"
-        "    var schemaFields = " + _get_schema_json(schema) + ";\n"
         "    for (var i = 0; i < schemaFields.length; i++) {\n"
         "      var col = schemaFields[i];\n"
         "      var val = '';\n"
@@ -345,81 +386,13 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
         "    }\n"
         "    return '<tr class=\"' + completed + '\">' + cells.join('') + '</tr>';\n"
         "  }).join('');\n"
-        "}\n"
-        "\n"
-        "document.getElementById('search-input').addEventListener('input', function(e) {\n"
-        "  STATE.filter.search = e.target.value;\n"
-        "  render();\n"
-        "});\n"
-        "\n"
+        "}\n\n"
+        + search_input_js + "\n"
         "render();\n"
-        "</script>"
+        "</script>\n"
     )
 
-    page_css = (
-        "<style>\n"
-        + "\n\n".join(all_css) + "\n\n"
-        + (theme_css + "\n\n" if theme_css else "")
-        + ".todo-completed td { text-decoration: line-through; opacity: 0.6; }\n"
-        + ".toast { padding: 10px 20px; border-radius: 8px; position: fixed; bottom: 20px; right: 20px; z-index: 1000; font-size: 14px; }\n"
-        + ".toast-success { background: #22c55e; color: white; }\n"
-        + ".toast-info { background: #3b82f6; color: white; }\n"
-        + ".toast-error { background: #ef4444; color: white; }\n"
-        + "#confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 999; }\n"
-        + ".confirm-panel { background: white; border-radius: 12px; padding: 32px; text-align: center; max-width: 400px; }\n"
-        + ".confirm-actions { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }\n"
-        + ".btn-cancel { padding: 10px 20px; border-radius: 8px; border: 1px solid #e5e7eb; background: white; cursor: pointer; }\n"
-        + ".btn-danger { padding: 10px 20px; border-radius: 8px; border: none; background: #ef4444; color: white; cursor: pointer; }\n"
-        + ".todo-check { width: 18px; height: 18px; cursor: pointer; }\n"
-        + ".col-checkbox { width: 40px; }\n"
-        + ".col-actions { width: 120px; }\n"
-        + ".col-date { width: 120px; }\n"
-        + ".container { max-width: 900px; margin: 0 auto; padding: 20px; }\n"
-        + ".app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n"
-        + ".search-bar { margin-bottom: 16px; }\n"
-        + ".search-bar input { width: 100%; padding: 10px 16px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }\n"
-        + ".table-container { overflow-x: auto; }\n"
-        + "table { width: 100%; border-collapse: collapse; }\n"
-        + "th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #e5e7eb; }\n"
-        + "th { font-weight: 600; color: #374151; }\n"
-        + ".btn-primary { padding: 10px 20px; border-radius: 8px; border: none; background: #3b82f6; color: white; cursor: pointer; font-size: 14px; }\n"
-        + ".btn-edit { padding: 6px 12px; border-radius: 6px; border: 1px solid #e5e7eb; background: white; cursor: pointer; margin-right: 4px; }\n"
-        + ".btn-delete { padding: 6px 12px; border-radius: 6px; border: 1px solid #fca5a5; background: white; color: #ef4444; cursor: pointer; }\n"
-        + ".badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; }\n"
-        + ".badge-danger { background: #fee2e2; color: #ef4444; }\n"
-        + ".badge-info { background: #dbeafe; color: #3b82f6; }\n"
-        + ".badge-ok { background: #dcfce7; color: #22c55e; }\n"
-        + ".modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 998; }\n"
-        + ".modal-panel { background: white; border-radius: 12px; padding: 32px; width: 90%; max-width: 500px; }\n"
-        + ".modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }\n"
-        + ".modal-close { background: none; border: none; font-size: 24px; cursor: pointer; }\n"
-        + ".form-group { margin-bottom: 16px; }\n"
-        + ".form-group label { display: block; margin-bottom: 4px; font-weight: 500; font-size: 14px; }\n"
-        + ".form-group input, .form-group select { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; box-sizing: border-box; }\n"
-        + ".form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }\n"
-        + ".form-actions .btn-cancel { background: white; border: 1px solid #e5e7eb; }\n"
-        + ".form-actions .btn-primary { background: #3b82f6; color: white; }\n"
-        + "</style>"
-    )
-
-    confirm_html = (
-        '<div id="confirm-overlay">\n'
-        '  <div class="confirm-panel">\n'
-        '    <h3 id="confirm-title">確認刪除？</h3>\n'
-        '    <p id="confirm-message">此操作無法撤銷</p>\n'
-        '    <div class="confirm-actions">\n'
-        '      <button class="btn-cancel" onclick="closeConfirm()">取消</button>\n'
-        '      <button class="btn-danger" onclick="doDelete()">刪除</button>\n'
-        '    </div>\n'
-        '  </div>\n'
-        '</div>'
-    )
-
-    toast_container = '<div id="toast-container"></div>'
-
-    page_title = (profile.context or "應用程式")[:50]
-    page_header = (profile.context or "應用程式")[:30]
-
+    # --- Assemble page ---
     page = (
         "<!DOCTYPE html>\n"
         "<html lang='zh-TW'>\n"
@@ -427,27 +400,21 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
         "  <meta charset='UTF-8'>\n"
         "  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n"
         "  <title>" + page_title + "</title>\n"
-        + page_css + "\n"
+        "  <style>\n"
+        + "\n\n".join(all_css) + "\n\n"
+        + (theme_css + "\n\n" if theme_css else "")
+        + ".todo-completed td { text-decoration: line-through; opacity: 0.6; }\n"
+        + ".toast { padding: 10px 20px; border-radius: 8px; position: fixed; bottom: 20px; right: 20px; z-index: 1000; font-size: 14px; }\n"
+        + ".toast-success { background: #22c55e; color: white; }\n"
+        + ".toast-info { background: #3b82f6; color: white; }\n"
+        + ".toast-error { background: #ef4444; color: white; }\n"
+        + "  </style>\n"
         "</head>\n"
         "<body>\n"
-        "  <div class='container'>\n"
-        "    <header class='app-header'>\n"
-        "      <h1>" + page_header + "</h1>\n"
-        "      <button class='btn-primary' onclick='openAdd()'>+ 新增</button>\n"
-        "    </header>\n"
-        "    <div class='search-bar'>\n"
-        "      <input type='text' id='search-input' placeholder='搜尋...' />\n"
-        "    </div>\n"
-        "    <div class='table-container'>\n"
-        "      <table id='data-table'>" + thead_html + "<tbody></tbody></table>\n"
-        "    </div>\n"
-        "  </div>\n"
-        + form_html + "\n"
-        + confirm_html + "\n"
-        + toast_container + "\n"
-        + app_js + "\n"
-        "</body>\n"
-        "</html>"
+        + page_html + "\n"
+        + app_js
+        + "</body>\n"
+        + "</html>\n"
     )
 
     return {
@@ -456,6 +423,89 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
         "metadata": {"skills_used": skills_used, "schema": schema, "theme": profile.theme}
     }
 
+
+def _inject_slot(html: str, slot_name: str, content: str) -> str:
+    """Replace <tag data-slot="name"> or data-slot="name" with content."""
+    import re
+    # Match: data-slot="slot_name" — replace the element's inner content or the attribute value
+    pattern = r'(<[^>]*\sdata-slot="' + re.escape(slot_name) + r'"[^>]*>)[^<]*(</[^>]+>)'
+    repl = r'\1' + content + r'\2'
+    result, n = re.subn(pattern, repl, html)
+    if n:
+        return result
+    # Fallback: replace the data-slot attribute marker with the content appended
+    fallback = f'data-slot="{slot_name}"'
+    if fallback in html:
+        return html.replace(fallback, f'data-slot="{slot_name}">{content}')
+    return html
+
+
+def _inject_form_into_modal(modal_html: str, form_html: str) -> str:
+    """Replace the <form> inside modal-form with schema-driven form."""
+    import re
+    # Replace the entire <form ...>...</form> block
+    result, n = re.subn(r'<form[^>]*>.*?</form>', form_html, modal_html, flags=re.DOTALL)
+    if n:
+        return result
+    # Fallback: just append
+    return modal_html + "\n" + form_html
+
+
+def _fallback_page_layout() -> str:
+    return (
+        "<div class='container'>\n"
+        "  <div data-slot='header'></div>\n"
+        "  <div data-slot='search'></div>\n"
+        "  <div data-slot='content'></div>\n"
+        "  <div data-slot='modal'></div>\n"
+        "  <div data-slot='confirm'></div>\n"
+        "  <div data-slot='toast'></div>\n"
+        "</div>\n"
+    )
+
+
+def _fallback_modal() -> str:
+    return (
+        "<div id='form-modal' class='modal-overlay' style='display:none'>\n"
+        "  <div class='modal-panel'>\n"
+        "    <div class='modal-header'>\n"
+        "      <h3 id='modal-title'>新增項目</h3>\n"
+        "      <button class='modal-close' onclick='closeModal()'>×</button>\n"
+        "    </div>\n"
+        "    <form id='inventory-form' class='modal-form'></form>\n"
+        "  </div>\n"
+        "</div>\n"
+    )
+
+
+def _fallback_confirm() -> str:
+    return (
+        "<div id='confirm-overlay' style='display:none'>\n"
+        "  <div class='confirm-panel'>\n"
+        "    <h3 id='confirm-title'>確認刪除？</h3>\n"
+        "    <p id='confirm-message'>此操作無法撤銷</p>\n"
+        "    <div class='confirm-actions'>\n"
+        "      <button class='btn-cancel' onclick='closeConfirm()'>取消</button>\n"
+        "      <button class='btn-danger' onclick='doDelete()'>刪除</button>\n"
+        "    </div>\n"
+        "  </div>\n"
+        "</div>\n"
+    )
+
+
+def _fallback_toast() -> str:
+    return "<div id='toast-container'></div>"
+
+
+def _fallback_table() -> str:
+    return (
+        "<div class='table-container'>\n"
+        "  <table id='data-table'>\n"
+        "    <thead data-slot='thead'></thead>\n"
+        "    <tbody></tbody>\n"
+        "  </table>\n"
+        "</div>\n"
+    )
 
 def _get_schema_json(schema):
     """Convert schema list to JS array literal."""

@@ -113,7 +113,7 @@ def run_pipeline(intent_text: str, target: str = "html", theme: str = "modern") 
 
     # Stage 5: Compose Output
     t0 = time.time()
-    compiled = compose_output(ordered_skills, schema, profile)
+    compiled = compose_output(ordered_skills, schema, profile, "html")
     stages["composer"] = time.time() - t0
 
     # Stage 6: QA Check
