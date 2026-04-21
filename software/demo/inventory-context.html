@@ -3,8 +3,34 @@
 <head>
   <meta charset='UTF-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-  <title>任務 - 我要一個代辦事項清單網頁，功能包含：</title>
+  <title>庫存 - 我要一個庫存管理網頁，功能包含：</title>
   <style>
+.confirm-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  width: 360px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.confirm-icon { font-size: 40px; margin-bottom: 16px; }
+.confirm-panel h3 { margin: 0 0 8px; font-size: 18px; color: #1e293b; }
+.confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
+.confirm-actions { display: flex; gap: 8px; justify-content: center; }
+
+.warehouse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #1a1a2e;
+  color: #fff;
+  border-bottom: 1px solid #16213e;
+}
+.header-title { font-size: 20px; font-weight: 600; }
+.header-actions { display: flex; gap: 8px; }
+
 .inventory-table-wrapper { overflow-x: auto; }
 .inventory-table {
   width: 100%;
@@ -59,41 +85,26 @@
 .btn-delete:hover { background: #fef2f2; }
 .empty-state { text-align: center; color: #94a3b8; padding: 40px !important; }
 
-.confirm-panel {
-  background: #fff;
-  border-radius: 12px;
-  padding: 32px;
-  width: 360px;
-  max-width: 90vw;
-  text-align: center;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px;
+  display: flex; flex-direction: column; gap: 8px;
+  z-index: 9999;
 }
-.confirm-icon { font-size: 40px; margin-bottom: 16px; }
-.confirm-panel h3 { margin: 0 0 8px; font-size: 18px; color: #1e293b; }
-.confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
-.confirm-actions { display: flex; gap: 8px; justify-content: center; }
-
-.warehouse-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: #1a1a2e;
-  color: #fff;
-  border-bottom: 1px solid #16213e;
-}
-.header-title { font-size: 20px; font-weight: 600; }
-.header-actions { display: flex; gap: 8px; }
-
-.badge {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+.toast {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
   font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: toastIn 0.2s ease;
 }
-.badge-ok { background: #d1fae5; color: #059669; }
-.badge-warning { background: #fef3c7; color: #d97706; }
-.badge-danger { background: #fee2e2; color: #dc2626; }
+.toast-success { background: #059669; color: #fff; }
+.toast-error { background: #dc2626; color: #fff; }
+.toast-warning { background: #d97706; color: #fff; }
+@keyframes toastIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
 
 .modal-overlay {
   position: fixed; inset: 0;
@@ -324,7 +335,7 @@ body {
 <div class="page-wrapper">
   <div data-slot="header"><header class="warehouse-header">
   <div class="header-left">
-    <span class="header-title">📦 任務</span>
+    <span class="header-title">📦 庫存</span>
   </div>
   <div class="header-actions" data-slot="actions"><button class="btn-primary" onclick="openAdd()">+ 新增</button>
   </div>
@@ -353,7 +364,7 @@ body {
 </div></div>
     <div data-slot="content"><div class="inventory-table-wrapper">
   <table class="inventory-table">
-    <thead><tr><th>ID</th><th>任務名稱</th><th>優先權</th><th>狀態</th><th>截止日期</th><th>建立時間</th><th>更新時間</th><th class="col-actions">操作</th></tr></thead>
+    <thead><tr><th>ID</th><th>商品名稱</th><th>截止日期</th><th>建立時間</th><th>更新時間</th><th class="col-actions">操作</th></tr></thead>
     <tbody id="inventory-body"><!-- slot:tbody --></tbody>
   </table>
 </div></div>
@@ -366,22 +377,8 @@ body {
     </div>
     <form id="inventory-form" class="modal-form">      <input type="hidden" id="edit-id" />
       <div class="form-group">
-        <label>任務名稱</label>
+        <label>商品名稱</label>
         <input type="text" id="field-title" />
-      </div>
-      <div class="form-group">
-        <label>優先權</label>
-        <select id="field-priority">
-          <option value="">請選擇</option>
-          <option value="高">高</option>          <option value="中">中</option>          <option value="低">低</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>狀態</label>
-        <select id="field-status">
-          <option value="">請選擇</option>
-          <option value="進行中">進行中</option>          <option value="已完成">已完成</option>          <option value="待處理">待處理</option>
-        </select>
       </div>
       <div class="form-group">
         <label>截止日期</label>
@@ -418,7 +415,7 @@ function showToast(message, type) {
 </script></div>
 </div>
 <script>
-var STATE_KEY = 'evcompiler_任務_-_我要一個代辦事項清單網頁，功能';
+var STATE_KEY = 'evcompiler_庫存_-_我要一個庫存管理網頁，功能包含';
 function saveState() {
   try { localStorage.setItem(STATE_KEY, JSON.stringify({ items: STATE.items, nextId: STATE.nextId })); } catch(e) {}
 }
@@ -446,8 +443,6 @@ function openAdd() {
   document.getElementById('modal-title').textContent = '新增項目';
   document.getElementById('edit-id').value = '';
   document.getElementById('field-title').value = '';
-  document.getElementById('field-priority').value = '';
-  document.getElementById('field-status').value = '';
   document.getElementById('field-dueDate').value = '';
   document.getElementById('form-modal').style.display = 'flex';
 }
@@ -458,8 +453,6 @@ function openEdit(id) {
   document.getElementById('modal-title').textContent = '編輯項目';
   document.getElementById('edit-id').value = id;
   document.getElementById('field-title').value = item.title || '';
-  document.getElementById('field-priority').value = item.priority || '';
-  document.getElementById('field-status').value = item.status || '';
   document.getElementById('field-dueDate').value = item.dueDate || '';
   document.getElementById('form-modal').style.display = 'flex';
 }
@@ -527,8 +520,6 @@ document.getElementById('inventory-form').addEventListener('submit', function(e)
   e.preventDefault();
   var data = {
     title: document.getElementById('field-title').value.trim(),
-    priority: document.getElementById('field-priority').value,
-    status: document.getElementById('field-status').value,
     dueDate: document.getElementById('field-dueDate').value,
   };
   var editId = document.getElementById('edit-id').value;
@@ -563,7 +554,7 @@ function render() {
     var cmp = va < vb ? -1 : va > vb ? 1 : 0;
     return dir === 'asc' ? cmp : -cmp;
   });
-  var schemaFields = [{ name: "id", type: "text" }, { name: "title", type: "text" }, { name: "priority", type: "badge" }, { name: "status", type: "badge" }, { name: "dueDate", type: "date" }, { name: "createdAt", type: "date" }, { name: "updatedAt", type: "date" }, { name: "actions", type: "action" }];
+  var schemaFields = [{ name: "id", type: "text" }, { name: "title", type: "text" }, { name: "dueDate", type: "date" }, { name: "createdAt", type: "date" }, { name: "updatedAt", type: "date" }, { name: "actions", type: "action" }];
   tbody.innerHTML = items.map(function(item) {
     var completed = item.completed ? ' todo-completed' : '';
     var cells = [];
@@ -573,8 +564,6 @@ function render() {
       switch (col.name) {
     case "id": return `<td>${item.id}</td>`;
     case "title": return `<td>${item.title}</td>`;
-    case "priority": return _renderBadge(item.priority, item);
-    case "status": return _renderBadge(item.status, item);
     case "dueDate": return `<td class="col-date">${item.dueDate}</td>`;
     case "createdAt": return `<td class="col-date">${item.createdAt}</td>`;
     case "updatedAt": return `<td class="col-date">${item.updatedAt}</td>`;
