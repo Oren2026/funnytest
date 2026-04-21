@@ -26,7 +26,8 @@ from nodes import (
 
 TEST_CASES_DIR = SOFTWARE_DIR / "test_cases"
 SKILLS_DIR = SOFTWARE_DIR / "skills"
-DEMO_DIR = SOFTWARE_DIR / "demo"
+# demo/ lives at repo root (alongside software/), not inside software/
+DEMO_DIR = SOFTWARE_DIR.parent / "demo"
 
 
 class Colors:
