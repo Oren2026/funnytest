@@ -98,9 +98,10 @@
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.5);
-  display: flex; align-items: center; justify-content: center;
+  display: none; align-items: center; justify-content: center;
   z-index: 1000;
 }
+.modal-overlay[data-active="true"] { display: flex; }
 .modal-panel {
   background: #fff;
   border-radius: 12px;
@@ -366,19 +367,13 @@ body {
   </table>
 </div></div>
   </main>
-  <div data-slot="modal"><div id="form-modal" class="modal-overlay" style="display:none">
+  <div data-slot="modal"><div id="form-modal" class="modal-overlay" data-slot="modal">
   <div class="modal-panel">
     <div class="modal-header">
       <h3 id="modal-title">新增項目</h3>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
-    <div id="form-modal" class="modal-overlay" style="display:none">
-  <div class="modal-panel">
-    <div class="modal-header">
-      <h3 id="modal-title">新增項目</h3>
-      <button class="modal-close" onclick="closeModal()">x</button>
-    </div>
-    <form id="inventory-form" class="modal-form">
+    <form id="inventory-form" class="modal-form" data-slot="form-fields">
       <input type="hidden" id="edit-id" />
       <div class="form-group">
         <label>任務名稱</label>
@@ -406,9 +401,7 @@ body {
         <button type="button" class="btn-cancel" onclick="closeModal()">取消</button>
         <button type="submit" class="btn-primary">儲存</button>
       </div>
-    </form>
-  </div>
-</div>
+</form>
   </div>
 </div></div>
   <div data-slot="confirm"><div id="confirm-overlay" class="modal-overlay" style="display:none">

@@ -103,22 +103,12 @@ def _build_form_from_schema(schema: List[Dict]) -> tuple:
             submit_lines.append("    " + key + ": document.getElementById('field-" + key + "').value.trim(),")
 
     form_html = (
-        '<div id="form-modal" class="modal-overlay" style="display:none">\n'
-        '  <div class="modal-panel">\n'
-        '    <div class="modal-header">\n'
-        '      <h3 id="modal-title">新增項目</h3>\n'
-        '      <button class="modal-close" onclick="closeModal()">x</button>\n'
-        '    </div>\n'
-        '    <form id="inventory-form" class="modal-form">\n'
         '      <input type="hidden" id="edit-id" />\n'
         + "\n".join(form_fields) + '\n'
         '      <div class="form-actions">\n'
         '        <button type="button" class="btn-cancel" onclick="closeModal()">取消</button>\n'
         '        <button type="submit" class="btn-primary">儲存</button>\n'
-        '      </div>\n'
-        '    </form>\n'
-        '  </div>\n'
-        '</div>'
+        '      </div>'
     )
 
     open_add_js = (
@@ -467,9 +457,11 @@ def _inject_slot(html: str, slot_name: str, content: str) -> str:
 
 
 def _inject_form_into_modal(modal_html: str, form_html: str) -> str:
-    """Replace the <form> inside modal-form with schema-driven form."""
-    # Replace the entire <form ...>...</form> block
-    result, n = re.subn(r'<form[^>]*>.*?</form>', form_html, modal_html, flags=re.DOTALL)
+    """Replace the inner content of <form> inside modal-form with schema-driven form fields."""
+    # Replace ONLY the inner content of <form>...</form>, preserving the form tags
+    pattern = r'(<form[^>]*>)(.*?)(</form>)'
+    replacement = r'\1\n' + form_html + r'\n\3'
+    result, n = re.subn(pattern, replacement, modal_html, flags=re.DOTALL)
     if n:
         return result
     # Fallback: just append
