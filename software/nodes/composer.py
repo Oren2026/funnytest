@@ -373,7 +373,7 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
         "  render();\n"
         "});\n\n"
         "function render() {\n"
-        "  var tbody = document.querySelector('#data-table tbody');\n"
+        "  var tbody = document.querySelector('.inventory-table tbody');\n"
         "  if (!tbody) return;\n"
         "  var search = STATE.filter.search.toLowerCase();\n"
         "  var items = STATE.items.filter(function(item) {\n"

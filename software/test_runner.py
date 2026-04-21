@@ -250,6 +250,7 @@ def run_test_case(case_name: str, verbose: bool = False, save_output: bool = Tru
             output_path = DEMO_DIR / f"{ctx['name']}.html"
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(code, encoding="utf-8")
+            rebuild_demo_index(DEMO_DIR, SOFTWARE_DIR)
 
         return {
             "name": ctx["name"],
@@ -274,6 +275,146 @@ def list_test_cases():
         ctx = parse_context_file(p)
         print(f"  {name:<30} — {ctx['intent_text'][:50]}...")
     print()
+
+
+def rebuild_demo_index(demo_dir: Path, software_dir: Path):
+    """Scan demo/ and regenerate index.html with all HTML files.
+    Reads context.md files to extract descriptions for L1 test cases."""
+    index_path = demo_dir / "index.html"
+    files = sorted(demo_dir.glob("*.html"))
+
+    # L1 test case descriptions from context.md
+    context_descs = {}
+    for ctx_file in software_dir.glob("*-context.md"):
+        name = ctx_file.stem.replace("-context", "")
+        try:
+            content = ctx_file.read_text(encoding="utf-8")
+            # Extract first line after ## 需求描述 or the raw intent line
+            m = re.search(r"## 需求描述\s*\n(.+?)(?=\n##|\n#)", content, re.DOTALL)
+            if m:
+                lines = [l.strip() for l in m.group(1).splitlines() if l.strip() and not l.strip().startswith("-")]
+                context_descs[name] = lines[0][:60] if lines else name
+            else:
+                context_descs[name] = name
+        except:
+            context_descs[name] = name
+
+    # Extract title from HTML content
+    def get_title(path):
+        try:
+            content = path.read_text(encoding="utf-8")
+            m = re.search(r'<title>(.*?)</title>', content)
+            return m.group(1) if m else path.stem
+        except:
+            return path.stem
+
+    # Group: context-based (L1 tests) vs legacy
+    l1_files = [f for f in files if "-context" in f.name]
+    legacy_files = [f for f in files if "-context" not in f.name and f.name != "index.html"]
+
+    cards_html = ""
+
+    # L1 tests section
+    if l1_files:
+        cards_html += '  <p class="section-title">L1 測試案例</p>\n  <div class="grid">\n'
+        for f in l1_files:
+            title = get_title(f)
+            # Derive case name from filename: books-context.html → books
+            case_name = f.stem.replace("-context", "")
+            desc = context_descs.get(case_name, title)
+            kb = f.stat().st_size // 1024
+            cards_html += f'''    <a class="card" href="{f.name}">
+      <div class="card-title">{title}</div>
+      <div class="card-desc">{desc}</div>
+      <div class="card-meta">
+        <span class="tag new">L1</span>
+        <span class="tag">{kb}KB</span>
+      </div>
+    </a>\n'''
+        cards_html += "  </div>\n\n  <hr>\n\n  "
+
+    # Legacy section
+    if legacy_files:
+        cards_html += '  <p class="section-title">早期產出</p>\n  <div class="grid">\n'
+        for f in legacy_files:
+            title = get_title(f)
+            kb = f.stat().st_size // 1024
+            cards_html += f'''    <a class="card" href="{f.name}">
+      <div class="card-title">{title}</div>
+      <div class="card-desc">{f.name}</div>
+      <div class="card-meta">
+        <span class="tag">{kb}KB</span>
+      </div>
+    </a>\n'''
+        cards_html += "  </div>\n"
+
+    html = HTML_TEMPLATE.replace("<!-- %%CARDS%% -->", cards_html)
+    index_path.write_text(html, encoding="utf-8")
+    total = len(l1_files) + len(legacy_files)
+    print(f"\n  {green('📝 Updated index.html')} — {total} page(s) indexed")
+
+
+HTML_TEMPLATE = """<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evolution Compiler — Demo Index</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 40px;
+    }
+    h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .subtitle { color: #64748b; margin-bottom: 40px; font-size: 14px; }
+    .section-title {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #6366f1; margin-bottom: 16px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 18px 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.15s;
+      display: block;
+    }
+    .card:hover {
+      border-color: #6366f1;
+      background: #263345;
+      transform: translateY(-2px);
+    }
+    .card-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+    .card-desc { font-size: 13px; color: #94a3b8; margin-bottom: 10px; }
+    .card-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag {
+      font-size: 11px; padding: 2px 7px;
+      border-radius: 4px; background: #334155; color: #94a3b8;
+    }
+    .tag.new { background: rgba(99,102,241,0.25); color: #818cf8; }
+    hr { border: none; border-top: 1px solid #1e293b; margin: 40px 0; }
+  </style>
+</head>
+<body>
+  <h1>Evolution Compiler — Demo Index</h1>
+  <p class="subtitle">軟體是 AI 用的工具，輸出要有品質，内部不需要 UI</p>
+
+<!-- %%CARDS%% -->
+</body>
+</html>
+"""
 
 
 if __name__ == "__main__":

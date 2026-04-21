@@ -7,42 +7,29 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Inter', -apple-system, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: #0f1117;
       color: #e2e8f0;
       min-height: 100vh;
       padding: 40px;
     }
-    h1 {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: #fff;
-    }
-    .subtitle {
-      color: #64748b;
-      margin-bottom: 40px;
-      font-size: 14px;
-    }
+    h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .subtitle { color: #64748b; margin-bottom: 40px; font-size: 14px; }
     .section-title {
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #6366f1;
-      margin-bottom: 16px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #6366f1; margin-bottom: 16px;
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 16px;
       margin-bottom: 48px;
     }
     .card {
       background: #1e293b;
       border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 20px;
+      border-radius: 10px;
+      padding: 18px 20px;
       text-decoration: none;
       color: inherit;
       transition: all 0.15s;
@@ -53,127 +40,97 @@
       background: #263345;
       transform: translateY(-2px);
     }
-    .card-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #fff;
-      margin-bottom: 4px;
-    }
-    .card-desc {
-      font-size: 13px;
-      color: #94a3b8;
-      margin-bottom: 12px;
-    }
-    .card-meta {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .card-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+    .card-desc { font-size: 13px; color: #94a3b8; margin-bottom: 10px; }
+    .card-meta { display: flex; gap: 6px; flex-wrap: wrap; }
     .tag {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: #334155;
-      color: #94a3b8;
+      font-size: 11px; padding: 2px 7px;
+      border-radius: 4px; background: #334155; color: #94a3b8;
     }
-    .tag.theme-glass { background: rgba(99,102,241,0.2); color: #818cf8; }
-    .tag.theme-modern { background: rgba(16,185,129,0.2); color: #34d399; }
-    .tag.theme-brutal { background: rgba(245,158,11,0.2); color: #fbbf24; }
-    .tag.theme-soft { background: rgba(236,72,153,0.2); color: #f472b6; }
-    .tag.new { background: rgba(239,68,68,0.2); color: #f87171; }
-    hr { border: none; border-top: 1px solid #334155; margin: 40px 0; }
+    .tag.new { background: rgba(99,102,241,0.25); color: #818cf8; }
+    hr { border: none; border-top: 1px solid #1e293b; margin: 40px 0; }
   </style>
 </head>
 <body>
   <h1>Evolution Compiler — Demo Index</h1>
   <p class="subtitle">軟體是 AI 用的工具，輸出要有品質，内部不需要 UI</p>
 
-  <p class="section-title">L1 測試案例（2026-04-22）— New</p>
+  <p class="section-title">L1 測試案例</p>
   <div class="grid">
-    <a class="card" href="todo-context.html">
-      <div class="card-title">待辦事項清單</div>
-      <div class="card-desc">代辦事項管理，包含新增、刪除、完成標記、關鍵字搜尋</div>
+    <a class="card" href="books-context.html">
+      <div class="card-title">books-context</div>
+      <div class="card-desc">books</div>
       <div class="card-meta">
-        <span class="tag new">new</span>
-        <span class="tag theme-glass">glass</span>
-        <span class="tag">CRUD</span>
-      </div>
-    </a>
-    <a class="card" href="inventory-context.html">
-      <div class="card-title">庫存管理系統</div>
-      <div class="card-desc">商品庫存管理，包含新增、刪除、編輯、搜尋</div>
-      <div class="card-meta">
-        <span class="tag new">new</span>
-        <span class="tag theme-modern">modern</span>
-        <span class="tag">CRUD</span>
+        <span class="tag new">L1</span>
+        <span class="tag">16KB</span>
       </div>
     </a>
     <a class="card" href="contacts-context.html">
-      <div class="card-title">聯絡人管理</div>
-      <div class="card-desc">聯絡人管理，包含新增、刪除、編輯、搜尋</div>
+      <div class="card-title">contacts-context</div>
+      <div class="card-desc">contacts</div>
       <div class="card-meta">
-        <span class="tag new">new</span>
-        <span class="tag theme-glass">glass</span>
-        <span class="tag">CRUD</span>
+        <span class="tag new">L1</span>
+        <span class="tag">16KB</span>
       </div>
     </a>
-    <a class="card" href="books-context.html">
-      <div class="card-title">書籍管理系統</div>
-      <div class="card-desc">書籍管理，包含新增、刪除、搜尋功能</div>
+    <a class="card" href="inventory-context.html">
+      <div class="card-title">inventory-context</div>
+      <div class="card-desc">inventory</div>
       <div class="card-meta">
-        <span class="tag new">new</span>
-        <span class="tag theme-soft">soft</span>
-        <span class="tag">CRUD</span>
+        <span class="tag new">L1</span>
+        <span class="tag">19KB</span>
+      </div>
+    </a>
+    <a class="card" href="todo-context.html">
+      <div class="card-title">todo-context</div>
+      <div class="card-desc">todo</div>
+      <div class="card-meta">
+        <span class="tag new">L1</span>
+        <span class="tag">20KB</span>
       </div>
     </a>
   </div>
 
   <hr>
 
-  <p class="section-title">早期產出</p>
+    <p class="section-title">早期產出</p>
   <div class="grid">
     <a class="card" href="todo.html">
-      <div class="card-title">待辦事項（早期版）</div>
-      <div class="card-desc">早期測試版本</div>
+      <div class="card-title">todo</div>
+      <div class="card-desc">todo.html</div>
       <div class="card-meta">
-        <span class="tag theme-modern">modern</span>
-      </div>
-    </a>
-    <a class="card" href="warehouse-glass.html">
-      <div class="card-title">Warehouse — Glass</div>
-      <div class="card-desc">倉庫管理 glass 版</div>
-      <div class="card-meta">
-        <span class="tag theme-glass">glass</span>
-      </div>
-    </a>
-    <a class="card" href="warehouse-modern.html">
-      <div class="card-title">Warehouse — Modern</div>
-      <div class="card-desc">倉庫管理 modern 版</div>
-      <div class="card-meta">
-        <span class="tag theme-modern">modern</span>
+        <span class="tag">19KB</span>
       </div>
     </a>
     <a class="card" href="warehouse-brutal.html">
-      <div class="card-title">Warehouse — Brutal</div>
-      <div class="card-desc">倉庫管理 brutal 版</div>
+      <div class="card-title">warehouse-brutal</div>
+      <div class="card-desc">warehouse-brutal.html</div>
       <div class="card-meta">
-        <span class="tag theme-brutal">brutal</span>
+        <span class="tag">19KB</span>
+      </div>
+    </a>
+    <a class="card" href="warehouse-glass.html">
+      <div class="card-title">warehouse-glass</div>
+      <div class="card-desc">warehouse-glass.html</div>
+      <div class="card-meta">
+        <span class="tag">19KB</span>
+      </div>
+    </a>
+    <a class="card" href="warehouse-modern.html">
+      <div class="card-title">warehouse-modern</div>
+      <div class="card-desc">warehouse-modern.html</div>
+      <div class="card-meta">
+        <span class="tag">19KB</span>
       </div>
     </a>
     <a class="card" href="warehouse-soft.html">
-      <div class="card-title">Warehouse — Soft</div>
-      <div class="card-desc">倉庫管理 soft 版</div>
+      <div class="card-title">warehouse-soft</div>
+      <div class="card-desc">warehouse-soft.html</div>
       <div class="card-meta">
-        <span class="tag theme-soft">soft</span>
-      </div>
-    </a>
-    <a class="card" href="WarehouseApp.jsx">
-      <div class="card-title">WarehouseApp.jsx</div>
-      <div class="card-desc">React 版本</div>
-      <div class="card-meta">
-        <span class="tag">React</span>
+        <span class="tag">20KB</span>
       </div>
     </a>
   </div>
+
 </body>
 </html>
