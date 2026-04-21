@@ -1,0 +1,38 @@
+# skill: empty-state
+# depends: button-primary
+# prohibit: none
+
+[html]
+<div class="empty-state" id="empty-state">
+  <div class="empty-icon">📭</div>
+  <h3 class="empty-title">尚無資料</h3>
+  <p class="empty-description">目前沒有任何項目。點擊下方按鈕新增第一筆。</p>
+  <button class="btn-primary" onclick="openAdd()">新增項目</button>
+</div>
+
+[react]
+const EmptyState = ({ icon = '📭', title = '尚無資料', description = '目前沒有任何項目。', action, onAction }) => {
+  return (
+    <div className="empty-state">
+      <div className="empty-icon">{icon}</div>
+      <h3 className="empty-title">{title}</h3>
+      <p className="empty-description">{description}</p>
+      {action && onAction && (
+        <button className="btn-primary" onClick={onAction}>{action}</button>
+      )}
+    </div>
+  );
+};
+
+[style]
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+.empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.8; }
+.empty-title { font-size: 20px; font-weight: 600; color: #374151; margin: 0 0 8px 0; }
+.empty-description { font-size: 14px; color: #9ca3af; margin: 0 0 24px 0; max-width: 300px; }

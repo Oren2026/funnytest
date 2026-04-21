@@ -1,0 +1,59 @@
+# skill: tabs
+# depends: button-primary
+# prohibit: none
+
+[html]
+<div class="tabs" id="tab-container">
+  <div class="tab-list" role="tablist">
+    <button class="tab-btn active" data-tab="tab1" onclick="switchTab('tab1')">標籤一</button>
+    <button class="tab-btn" data-tab="tab2" onclick="switchTab('tab2')">標籤二</button>
+    <button class="tab-btn" data-tab="tab3" onclick="switchTab('tab3')">標籤三</button>
+  </div>
+  <div class="tab-panels">
+    <div class="tab-panel active" id="tab1-panel">內容一</div>
+    <div class="tab-panel" id="tab2-panel" style="display:none">內容二</div>
+    <div class="tab-panel" id="tab3-panel" style="display:none">內容三</div>
+  </div>
+</div>
+
+[react]
+const Tabs = ({ tabs = [], defaultTab }) => {
+  const [active, setActive] = React.useState(defaultTab || tabs[0]?.value);
+  return (
+    <div className="tabs">
+      <div className="tab-list" role="tablist">
+        {tabs.map(tab => (
+          <button key={tab.value} className={"tab-btn" + (active === tab.value ? " active" : "")} onClick={() => setActive(tab.value)}>{tab.label}</button>
+        ))}
+      </div>
+      <div className="tab-panels">
+        {tabs.map(tab => (
+          <div key={tab.value} className={"tab-panel" + (active === tab.value ? " active" : "")} style={{ display: active === tab.value ? 'block' : 'none' }}>
+            {tab.children}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+[style]
+.tabs { border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+.tab-list { display: flex; border-bottom: 1px solid #e5e7eb; background: #fafafa; }
+.tab-btn {
+  padding: 14px 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  transition: all 0.15s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: #374151; }
+.tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; background: #fff; }
+.tab-panels { padding: 20px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
