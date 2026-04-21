@@ -1,0 +1,83 @@
+# skill: sidebar
+# depends: button-primary
+# prohibit: none
+
+[html]
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-logo">📦</span>
+    <span class="sidebar-title">系統</span>
+  </div>
+  <nav class="sidebar-nav" id="sidebar-nav">
+    <a class="nav-item active" href="#" onclick="navigate('dashboard')">
+      <span class="nav-icon">📊</span> 儀表板
+    </a>
+    <a class="nav-item" href="#" onclick="navigate('list')">
+      <span class="nav-icon">📋</span> 列表
+    </a>
+    <a class="nav-item" href="#" onclick="navigate('settings')">
+      <span class="nav-icon">⚙️</span> 設定
+    </a>
+  </nav>
+  <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+</aside>
+
+[react]
+const Sidebar = ({ items = [], activeItem, onNavigate }) => {
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-header">
+        <span className="sidebar-logo">📦</span>
+        <span className="sidebar-title">系統</span>
+      </div>
+      <nav className="sidebar-nav">
+        {items.map(item => (
+          <a key={item.value} className={"nav-item" + (activeItem === item.value ? " active" : "")} href="#" onClick={e => { e.preventDefault(); onNavigate(item.value); }}>
+            <span className="nav-icon">{item.icon}</span> {item.label}
+          </a>
+        ))}
+      </nav>
+    </aside>
+  );
+};
+
+[style]
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: #1e293b;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  border-bottom: 1px solid #334155;
+}
+.sidebar-logo { font-size: 24px; }
+.sidebar-title { font-size: 18px; font-weight: 600; }
+.sidebar-nav { flex: 1; padding: 12px 0; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { background: #334155; color: #e2e8f0; }
+.nav-item.active { background: #334155; color: #fff; border-left-color: #3b82f6; }
+.nav-icon { font-size: 18px; }
+.sidebar-toggle { display: none; }
+@media (max-width: 768px) {
+  .sidebar { width: 60px; }
+  .sidebar-title, .nav-item span:not(.nav-icon) { display: none; }
+  .nav-item { justify-content: center; padding: 12px; }
+}

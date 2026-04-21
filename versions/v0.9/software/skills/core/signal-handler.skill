@@ -1,0 +1,15 @@
+# skill: signal-handler
+# depends: none
+# prohibit: malloc,calloc,realloc,free
+
+// Signal handler — graceful shutdown for SIGTERM/SIGINT
+volatile sig_atomic_t keep_running = 1;
+
+void sig_handler(int sig) {
+    keep_running = 0;
+}
+
+void signal_setup(void) {
+    signal(SIGTERM, sig_handler);
+    signal(SIGINT, sig_handler);
+}

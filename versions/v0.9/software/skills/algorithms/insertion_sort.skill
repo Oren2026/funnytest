@@ -1,0 +1,16 @@
+# skill: insertion_sort
+# depends: array-base,comparison
+# prohibit: malloc,calloc,realloc,free
+
+// Insertion sort — O(n²), stable, efficient for small/nearly-sorted arrays
+void insertion_sort(int arr[], int n) {
+    for (int i = 1; i < n; i++) {
+        int key = arr[i];
+        int j = i - 1;
+        while (j >= 0 && compare_gt(arr[j], key)) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
+    }
+}

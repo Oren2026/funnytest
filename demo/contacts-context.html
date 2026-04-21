@@ -436,7 +436,7 @@ document.getElementById('inventory-form').addEventListener('submit', function(e)
 });
 
 function render() {
-  var tbody = document.querySelector('#data-table tbody');
+  var tbody = document.querySelector('.inventory-table tbody');
   if (!tbody) return;
   var search = STATE.filter.search.toLowerCase();
   var items = STATE.items.filter(function(item) {

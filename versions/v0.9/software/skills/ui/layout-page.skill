@@ -1,0 +1,26 @@
+# skill: layout-page
+# depends: layout-header, search-bar, table-data, modal-form, confirm-dialog, toast-notify
+# prohibit: none
+
+[html]
+<div class="page-wrapper">
+  <div data-slot="header"></div>
+  <main class="page-main">
+    <div data-slot="search"></div>
+    <div data-slot="content"></div>
+  </main>
+  <div data-slot="modal"></div>
+  <div data-slot="confirm"></div>
+  <div data-slot="toast"></div>
+</div>
+
+[react]
+const PageLayout = ({ children }) => (
+  <div className="page-wrapper">
+    {children}
+  </div>
+);
+
+[style]
+.page-wrapper { min-height: 100vh; }
+.page-main { max-width: 900px; margin: 0 auto; padding: 20px; }

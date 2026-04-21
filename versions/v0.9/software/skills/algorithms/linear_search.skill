@@ -1,0 +1,13 @@
+# skill: linear_search
+# depends: array-base,comparison
+# prohibit: malloc,calloc,realloc,free
+
+// Linear search — O(n), returns index or -1 if not found
+int linear_search(int arr[], int n, int target) {
+    for (int i = 0; i < n; i++) {
+        if (compare_eq(arr[i], target)) {
+            return i;
+        }
+    }
+    return -1;
+}

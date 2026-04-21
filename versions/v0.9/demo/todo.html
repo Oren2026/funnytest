@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>代辦事項清單</title>
+<style>
+.todo-completed td { text-decoration: line-through; opacity: 0.6; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.search-box { position: relative; flex: 1; max-width: 300px; }
+.search-box input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E") no-repeat 10px center;
+  box-sizing: border-box;
+.search-box input:focus { outline: none; border-color: #3b82f6; }
+.filter-group { display: flex; gap: 8px; }
+.filter-group select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  cursor: pointer;
+.filter-group select:focus { outline: none; border-color: #3b82f6; }
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+  background: #fff;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+.btn-danger:hover { background: #fef2f2; border-color: #f87171; }
+.inventory-table-wrapper { overflow-x: auto; }
+.inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+.inventory-table th {
+  background: #f1f5f9;
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+.inventory-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+.inventory-table tr:hover td { background: #f8fafc; }
+.category-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+.cat-electronics { background: #dbeafe; color: #1d4ed8; }
+.cat-tools { background: #fef3c7; color: #d97706; }
+.cat-materials { background: #d1fae5; color: #059669; }
+.cat-packaging { background: #ede9fe; color: #7c3aed; }
+.action-btns { display: flex; gap: 4px; }
+.btn-edit {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+.btn-edit:hover { background: #f1f5f9; }
+.btn-delete {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid #fca5a5;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+.btn-delete:hover { background: #fef2f2; }
+.empty-state { text-align: center; color: #94a3b8; padding: 40px !important; }
+.confirm-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  width: 360px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+.confirm-icon { font-size: 40px; margin-bottom: 16px; }
+.confirm-panel h3 { margin: 0 0 8px; font-size: 18px; color: #1e293b; }
+.confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
+.confirm-actions { display: flex; gap: 8px; justify-content: center; }
+.warehouse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #1a1a2e;
+  color: #fff;
+  border-bottom: 1px solid #16213e;
+.header-title { font-size: 20px; font-weight: 600; }
+.header-actions { display: flex; gap: 8px; }
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+.btn-primary:hover { background: #2563eb; }
+.btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px;
+  display: flex; flex-direction: column; gap: 8px;
+  z-index: 9999;
+.toast {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: toastIn 0.2s ease;
+.toast-success { background: #059669; color: #fff; }
+.toast-error { background: #dc2626; color: #fff; }
+.toast-warning { background: #d97706; color: #fff; }
+@keyframes toastIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+.modal-panel {
+  background: #fff;
+  border-radius: 12px;
+  width: 480px;
+  max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  overflow: hidden;
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+.modal-header h3 { margin: 0; font-size: 18px; color: #1e293b; }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 6px;
+  border: none; background: transparent; font-size: 20px;
+  cursor: pointer; color: #94a3b8;
+.modal-close:hover { background: #f1f5f9; color: #475569; }
+.modal-form { padding: 24px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #374151; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid #d1d5db; border-radius: 6px;
+  font-size: 14px; box-sizing: border-box;
+  transition: border-color 0.15s;
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none; border-color: #3b82f6;
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px; }
+.btn-cancel {
+  padding: 8px 16px; border-radius: 6px;
+  border: 1px solid #d1d5db; background: #fff;
+  font-size: 14px; cursor: pointer;
+.btn-cancel:hover { background: #f9fafb; }
+.badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+.badge-ok { background: #d1fae5; color: #059669; }
+.badge-warning { background: #fef3c7; color: #d97706; }
+.badge-danger { background: #fee2e2; color: #dc2626; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --danger: #f43f5e;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --bg-main: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  --card-bg: rgba(255, 255, 255, 0.06);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  min-height: 100vh;
+  background-attachment: fixed;
+}
+
+.warehouse-header {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--glass-border) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15) !important;
+  padding: 20px 32px !important;
+}
+
+.header-title { font-size: 22px !important; font-weight: 700 !important; letter-spacing: -0.5px; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4) !important;
+  transition: all 0.2s ease !important;
+}
+.btn-primary:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5) !important;
+  background: linear-gradient(135deg, var(--accent-hover) 0%, #a78bfa 100%) !important;
+}
+
+.btn-edit {
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px);
+  border-radius: 8px !important;
+  color: var(--text-primary) !important;
+  transition: all 0.2s ease !important;
+}
+.btn-edit:hover {
+  background: rgba(255,255,255,0.12) !important;
+  border-color: var(--accent) !important;
+}
+
+.btn-delete {
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+  background: rgba(244, 63, 94, 0.1) !important;
+  color: var(--danger) !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+.btn-delete:hover {
+  background: rgba(244, 63, 94, 0.2) !important;
+  border-color: var(--danger) !important;
+}
+
+.inventory-table { border-collapse: separate !important; border-spacing: 0 8px !important; }
+.inventory-table th {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  border: none !important;
+  padding: 0 16px 12px !important;
+}
+.inventory-table td {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-left: none !important;
+  border-right: none !important;
+  padding: 16px !important;
+  transition: background 0.15s ease !important;
+}
+.inventory-table tr td:first-child { border-left: 1px solid var(--border-subtle) !important; border-radius: 12px 0 0 12px !important; }
+.inventory-table tr td:last-child { border-right: 1px solid var(--border-subtle) !important; border-radius: 0 12px 12px 0 !important; }
+.inventory-table tr:hover td { background: rgba(255,255,255,0.1) !important; }
+
+.toolbar {
+  background: transparent !important;
+  border: none !important;
+  padding: 24px 32px !important;
+}
+.search-box input {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 10px !important;
+  color: var(--text-primary) !important;
+  padding: 10px 16px 10px 40px !important;
+  font-size: 14px !important;
+  transition: all 0.2s ease !important;
+}
+.search-box input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+  outline: none !important;
+}
+.search-box input::placeholder { color: var(--text-secondary) !important; }
+.filter-group select {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 10px !important;
+  color: var(--text-primary) !important;
+  padding: 10px 16px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+.filter-group select option { background: #1e1b4b; color: #f1f5f9; }
+.filter-group select:focus { border-color: var(--accent) !important; outline: none !important; }
+
+</style>
+</head>
+<body>
+
+<header class="warehouse-header">
+  <div class="header-left">
+    <span class="header-title">📋 代辦事項清單</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn-primary" onclick="openAdd()">+ 新增</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="search-box">
+    <input type="text" id="search-input" placeholder="搜尋..." oninput="handleSearch(this.value)" />
+  </div>
+  <div class="filter-group">
+    <select id="filter-category" style="display:none"></select>
+    <select id="sort-by" onchange="handleSort(this.value)">
+      <option value="title-asc">標題 ↑</option>
+      <option value="title-desc">標題 ↓</option>
+      <option value="dueDate-asc">截止日期 ↑</option>
+      <option value="dueDate-desc">截止日期 ↓</option>
+    </select>
+  </div>
+</div>
+
+<main style="padding: 24px;">
+  <div class="inventory-table-wrapper">
+    <table class="inventory-table">
+      <thead>
+        <tr>
+      <th></th>
+      <th>標題</th>
+      <th>截止日期</th>
+      <th>優先權</th>
+      <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="inventory-body"></tbody>
+    </table>
+  </div>
+</main>
+
+<div id="form-modal" class="modal-overlay" style="display:none">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h3 id="modal-title">新增項目</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <form id="inventory-form" class="modal-form">
+      <input type="hidden" id="edit-id" />
+      <div class="form-group">
+        <label>標題</label>
+        <input type="text" id="field-title" />
+      </div>
+      <div class="form-group">
+        <label>截止日期</label>
+        <input type="date" id="field-dueDate" />
+      </div>
+      <div class="form-group">
+        <label>優先權</label>
+        <select id="field-priority">
+          <option value="">請選擇</option>
+          <option value="高">高</option>
+          <option value="中">中</option>
+          <option value="低">低</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal()">取消</button>
+        <button type="submit" class="btn-primary">儲存</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div id="confirm-overlay" class="modal-overlay" style="display:none">
+  <div class="confirm-panel">
+    <div class="confirm-icon">⚠️</div>
+    <h3 id="confirm-title">確認刪除？</h3>
+    <p id="confirm-message">此操作無法撤銷</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">取消</button>
+      <button id="confirm-btn" class="btn-danger" onclick="doDelete()">刪除</button>
+    </div>
+  </div>
+</div>
+<div id="toast-container"></div>
+<script>
+const STATE = {
+  items: {id:1, name:"整理房間", category:"高優先權", quantity:0, minStock:0, note:"", updatedAt:"2026-04-25", completed:true}, {id:2, name:"回覆 Email", category:"中優先權", quantity:0, minStock:0, note:"", updatedAt:"2026-04-22", completed:true}, {id:3, name:"購買食材", category:"低優先權", quantity:0, minStock:0, note:"", updatedAt:"2026-04-20", completed:true}, {id:4, name:"準備報告", category:"高優先權", quantity:0, minStock:0, note:"", updatedAt:"2026-04-28", completed:true},
+  nextId: 5,
+  filter: { search: "", category: "", sort: "completed-desc" },
+  deleteTarget: null,
+  editTarget: null,
+};
+
+function render() {
+    let items = STATE.items.filter(item => {
+      const matchSearch = !STATE.filter.search ||
+        Object.values(item).join(' ').toLowerCase().includes(STATE.filter.search.toLowerCase());
+      const matchCat = !STATE.filter.category || item.category === STATE.filter.category;
+      return matchSearch && matchCat;
+    });
+  
+    const [sortField, sortDir] = STATE.filter.sort.split('-');
+    items.sort((a, b) => {
+      let va = a[sortField], vb = b[sortField];
+      if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  
+    const tbody = document.getElementById('inventory-body');
+    if (items.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">尚無資料</td></tr>';
+      return;
+    }
+    tbody.innerHTML = items.map(item => {
+      const cells = [
+        `<td><input type="checkbox" id="cb-${item.id}" onclick="toggleComplete(${item.id})" ${item.completed ? 'checked' : ''} /></td>`,
+        `<td>${item['title'] ?? ''}</td>`,
+        `<td>${item['dueDate'] ? new Date(item['dueDate']).toLocaleDateString('zh-TW') : ''}</td>`,
+        `<td>${_renderBadge(item['priority'], item)}</td>`,
+        `<td><div class="action-btns">${_renderActions(item)}</div></td>`,
+      ].join('');
+      const rowClass = item.completed ? ' class="todo-completed"' : '';
+      return `<tr${rowClass}>${cells}</tr>`;
+    }).join('');
+  }
+}
+
+function _renderBadge(value, item) {
+  if (value === undefined || value === null) return '';
+  const v = String(value);
+  if (v === '高') return '<span class="badge badge-danger">高</span>';
+  if (v === '中') return '<span class="badge badge-info">中</span>';
+  if (v === '低') return '<span class="badge badge-ok">低</span>';
+  return '<span class="badge">' + v + '</span>';
+}
+
+function _renderActions(item) {
+  return `<button class="btn-edit" onclick="openEdit(${item.id})">編輯</button><button class="btn-delete" onclick="openDelete(${item.id})">刪除</button>`;
+}
+
+function toggleComplete(id) {
+  const item = STATE.items.find(x => x.id === id);
+  if (item) {
+    item.completed = !item.completed;
+    showToast(item.completed ? '已完成' : '已取消完成', item.completed ? 'success' : 'info');
+    render();
+  }
+}
+
+
+function openAdd() {\n  STATE.editTarget = null;\n  document.getElementById('modal-title').textContent = '新增項目';\n  document.getElementById('edit-id').value = '';\n  document.getElementById('field-title').value = '';\n  document.getElementById('field-dueDate').value = '';\n  document.getElementById('field-priority').value = '';\n  document.getElementById('form-modal').style.display = 'flex';\n}
+
+function openEdit(id) {\n  const item = STATE.items.find(x => x.id === id);\n  STATE.editTarget = id;\n  document.getElementById('modal-title').textContent = '編輯項目';\n  document.getElementById('edit-id').value = id;\n  document.getElementById('field-title').value = item.title || '';\n  document.getElementById('field-dueDate').value = item.dueDate || '';\n  document.getElementById('field-priority').value = item.priority || '';\n  document.getElementById('form-modal').style.display = 'flex';\n}
+
+function closeModal() { document.getElementById('form-modal').style.display = 'none'; STATE.editTarget = null; }
+
+function openDelete(id) {
+  STATE.deleteTarget = id;
+  const item = STATE.items.find(x => x.id === id);
+  document.getElementById('confirm-title').textContent = '確認刪除「' + (item.title || item.name || '') + '」？';
+  document.getElementById('confirm-overlay').style.display = 'flex';
+}
+
+function closeConfirm() { document.getElementById('confirm-overlay').style.display = 'none'; STATE.deleteTarget = null; }
+
+function doDelete() {
+  if (STATE.deleteTarget !== null) {
+    STATE.items = STATE.items.filter(x => x.id !== STATE.deleteTarget);
+    showToast('刪除成功', 'success');
+    closeConfirm();
+    render();
+  }
+}
+
+document.getElementById('inventory-form').onsubmit = function(e) {
+  e.preventDefault();
+  const data = {
+    title: document.getElementById('field-title').value.trim(),\n    dueDate: document.getElementById('field-dueDate').value.trim(),\n    priority: document.getElementById('field-priority').value.trim(),
+  };
+  if (STATE.editTarget !== null) {
+    const idx = STATE.items.findIndex(x => x.id === STATE.editTarget);
+    STATE.items[idx] = { ...STATE.items[idx], ...data };
+    showToast('更新成功', 'success');
+  } else {
+    STATE.items.push({ id: STATE.nextId++, ...data });
+    showToast('新增成功', 'success');
+  }
+  closeModal();
+  render();
+};
+
+function handleSearch(v) { STATE.filter.search = v; render(); }
+function handleFilter(v) { STATE.filter.category = v; render(); }
+function handleSort(v) { STATE.filter.sort = v; render(); }
+
+function showToast(message, type) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast toast-' + type;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+render();
+</script>
+</body>
+</html>

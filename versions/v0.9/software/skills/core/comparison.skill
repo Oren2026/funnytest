@@ -1,0 +1,22 @@
+# skill: comparison
+# depends: none
+# prohibit: none
+
+// Comparison utilities — branchless where possible
+int compare_gt(int a, int b) {
+    return a > b ? 1 : 0;
+}
+
+int compare_lt(int a, int b) {
+    return a < b ? 1 : 0;
+}
+
+int compare_eq(int a, int b) {
+    return a == b ? 1 : 0;
+}
+
+void swap(int* a, int* b) {
+    int tmp = *a;
+    *a = *b;
+    *b = tmp;
+}

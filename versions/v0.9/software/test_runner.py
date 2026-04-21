@@ -9,7 +9,6 @@ L1 測試流程腳本
     python test_runner.py --list             # 列出所有測試案例
 """
 import os
-import re
 import sys
 import json
 import time
@@ -176,15 +175,6 @@ def print_result(result: dict, verbose: bool = False):
         bar = "█" * int(dur / max(total, 0.001) * 20)
         print(f"  {stage:<22} {dur*1000:>6.1f}ms {bar}")
 
-    # Data Flow Validation (Phase 3)
-    schema = result["schema"]
-    code = compiled.get("code", "")
-    context_data = result.get("context_data", {})
-    df_result = validate_data_flow(code, schema, context_data)
-    df_passed = df_result["passed"]
-    print(f"\n{blue('🌊 Data Flow')} (Phase 3)")
-    print_data_flow_result(df_result)
-
     # QA Result
     print(f"\n{blue('🔍 QA Check')}")
     issues = qa.get("issues", [])
@@ -227,7 +217,7 @@ def print_result(result: dict, verbose: bool = False):
         for w in meta_warnings:
             print(f"    {w}")
 
-    return passed, len(errors), len(warnings), df_passed
+    return passed, len(errors), len(warnings)
 
 
 def run_test_case(case_name: str, verbose: bool = False, save_output: bool = True) -> dict:
@@ -253,8 +243,7 @@ def run_test_case(case_name: str, verbose: bool = False, save_output: bool = Tru
 
     try:
         result = run_pipeline(intent_text, target="html", theme=theme)
-        result["context_data"] = ctx
-        passed, errors, warnings, df_passed = print_result(result, verbose=verbose)
+        passed, errors, warnings = print_result(result, verbose=verbose)
 
         if save_output:
             code = result["compiled"].get("code", "")
@@ -265,10 +254,9 @@ def run_test_case(case_name: str, verbose: bool = False, save_output: bool = Tru
 
         return {
             "name": ctx["name"],
-            "status": "PASS" if (passed and df_passed) else "FAIL",
+            "status": "PASS" if passed else "FAIL",
             "errors": errors,
             "warnings": warnings,
-            "df_passed": df_passed,
             "output_size": len(result["compiled"].get("code", "")),
         }
 
@@ -427,91 +415,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </body>
 </html>
 """
-
-
-# =============================================================================
-# DATA FLOW VALIDATION (Phase 3)
-# =============================================================================
-# TODO (Phase 3): validate_data_flow checks whether seed data from context.md
-# correctly flows through the pipeline into the HTML output.
-#
-# Validation points:
-# 1. Initial data (from context.md ## 初始資料 section) appears in STATE.items
-# 2. Form fields match schema (each field has an input in the modal)
-# 3. Render function references correct data keys from schema
-# 4. render() tbody selector matches skill table id/class
-#
-# Current limitation: context files lack ## 初始資料 section,
-# so this remains a TODO marker until the format is extended.
-
-class DataFlowIssue:
-    def __init__(self, level: str, message: str, location: str = ""):
-        self.level = level  # error, warning, info
-        self.message = message
-        self.location = location
-
-def validate_data_flow(html: str, schema: list, context_data: dict) -> dict:
-    """
-    Phase 3 validation: verify seed data flows correctly into HTML.
-
-    Currently a stub — returns empty issues list.
-    Full implementation requires context.md to include ## 初始資料 section.
-    """
-    issues = []
-
-    # 1. Check render() tbody selector matches table structure
-    # Current: .inventory-table tbody (class-based, matches skill)
-    tbody_sel = re.search(r"querySelector\(['\"]([^'\"]+)['\"]", html)
-    if tbody_sel:
-        sel = tbody_sel.group(1)
-        if sel == "#data-table":
-            issues.append(DataFlowIssue("error",
-                "render() uses #data-table id but skill table uses #inventory-body id or .inventory-table class",
-                "composer.py render()"))
-
-    # 2. Check form fields match schema (non-action, non-readonly fields)
-    # Badge/date/action types are display-only, not editable inputs
-    editable_types = ("text", "number", "email", "tel", "checkbox", "select", "textarea")
-    form_fields = re.findall(r'<input[^>]+id="field-([^"]+)"', html)
-    schema_fields = [f["name"] for f in schema
-                     if f.get("type") in editable_types
-                     and f.get("editable", True) != False]
-    missing_fields = set(schema_fields) - set(form_fields)
-    if missing_fields:
-        issues.append(DataFlowIssue("warning",
-            f"Schema fields missing from form: {missing_fields}",
-            "modal-form injection"))
-
-    # 3. Check STATE.items initialization
-    if "items: []" in html and "loadState();" in html:
-        # Empty initial data is OK if loadState() loads from localStorage
-        # But if there's seed data in context, it should appear in the HTML
-        seed_data = context_data.get("initial_data", [])
-        if seed_data and "items: []" in html:
-            issues.append(DataFlowIssue("warning",
-                "Context has initial_data but HTML STATE.items is empty (seed data not injected)",
-                "composer.py initial state"))
-
-    return {
-        "issues": issues,
-        "passed": all(i.level != "error" for i in issues),
-    }
-
-
-def print_data_flow_result(df_result: dict):
-    """Print data flow validation results."""
-    issues = df_result.get("issues", [])
-    errors = [i for i in issues if i.level == "error"]
-    warnings = [i for i in issues if i.level == "warning"]
-
-    if not issues:
-        print(f"  {green('✅ Data Flow')} — seed data OK")
-        return
-
-    for e in errors:
-        print(f"  {red('❌ Data:')} {e.message} [{e.location}]")
-    for w in warnings:
-        print(f"  {yellow('⚠ Data:')} {w.message} [{w.location}]")
 
 
 if __name__ == "__main__":

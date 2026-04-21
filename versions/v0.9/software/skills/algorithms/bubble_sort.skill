@@ -1,0 +1,14 @@
+# skill: bubble_sort
+# depends: array-base,comparison
+# prohibit: malloc,calloc,realloc,free
+
+// Bubble sort — O(n²), stable, no dynamic allocation
+void bubble_sort(int arr[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (compare_gt(arr[j], arr[j + 1])) {
+                swap(&arr[j], &arr[j + 1]);
+            }
+        }
+    }
+}

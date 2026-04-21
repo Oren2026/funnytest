@@ -1,0 +1,60 @@
+# skill: linked-list-static
+# depends: array-base,memory-static
+# prohibit: malloc,calloc,realloc,free
+
+// Static linked-list — array-based, no pointers
+// Max 64 nodes, node index 0 is reserved as NULL
+#define LL_MAX_NODES 64
+#define LL_NULL 0
+
+struct LLNode {
+    int data;
+    int next;
+};
+
+struct StaticLinkedList {
+    struct LLNode nodes[LL_MAX_NODES];
+    int free_head;
+    int size;
+};
+
+void ll_init(struct StaticLinkedList* list) {
+    list->size = 0;
+    list->free_head = 1;
+    for (int i = 1; i < LL_MAX_NODES - 1; i++) {
+        list->nodes[i].next = i + 1;
+    }
+    list->nodes[LL_MAX_NODES - 1].next = LL_NULL;
+    list->nodes[0].next = LL_NULL;
+}
+
+int ll_alloc_node(struct StaticLinkedList* list) {
+    if (list->free_head == LL_NULL) return LL_NULL;
+    int idx = list->free_head;
+    list->free_head = list->nodes[idx].next;
+    list->size++;
+    return idx;
+}
+
+void ll_free_node(struct StaticLinkedList* list, int idx) {
+    list->nodes[idx].next = list->free_head;
+    list->free_head = idx;
+    list->size--;
+}
+
+void ll_push_front(struct StaticLinkedList* list, int data) {
+    int node = ll_alloc_node(list);
+    if (node == LL_NULL) return;
+    list->nodes[node].data = data;
+    list->nodes[node].next = list->nodes[0].next;
+    list->nodes[0].next = node;
+}
+
+int ll_pop_front(struct StaticLinkedList* list) {
+    if (list->size == 0) return 0;
+    int first = list->nodes[0].next;
+    int data = list->nodes[first].data;
+    list->nodes[0].next = list->nodes[first].next;
+    ll_free_node(list, first);
+    return data;
+}
