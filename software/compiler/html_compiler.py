@@ -92,7 +92,11 @@ function _renderBadge(value, item) {
 }
 
 function _renderActions(item) {
-  return `<button class="btn-edit" onclick="openEdit(${item.id})">編輯</button><button class="btn-delete" onclick="openDelete(${item.id})">刪除</button>`;
+  const done = item.completed ? '✓' : '○';
+  const doneClass = item.completed ? 'btn-done-active' : 'btn-done';
+  return `<button class="${doneClass}" onclick="toggleComplete(${item.id})">${done}</button>`
+    + `<button class="btn-edit" onclick="openEdit(${item.id})">編輯</button>`
+    + `<button class="btn-delete" onclick="openDelete(${item.id})">刪除</button>`;
 }
 
 function toggleComplete(id) {
@@ -351,7 +355,16 @@ render();
     app_js = app_js.replace('{open_add_js}', open_add_js)
     app_js = app_js.replace('{open_edit_js}', open_edit_js)
     app_js = app_js.replace('{submit_data}', submit_data_js)
-    page_css = ".todo-completed td { text-decoration: line-through; opacity: 0.6; }\n"
+    page_css = """.todo-completed td { text-decoration: line-through; opacity: 0.6; }
+.btn-done, .btn-done-active {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%; border: 1px solid #d1d5db;
+  background: #fff; color: #9ca3af; font-size: 16px; cursor: pointer; transition: all 0.15s;
+}
+.btn-done:hover { background: #f0fdf4; border-color: #86efac; color: #22c55e; }
+.btn-done-active { background: #22c55e; border-color: #22c55e; color: #fff; }
+.btn-done-active:hover { background: #16a34a; border-color: #16a34a; }
+"""
     page = f'''<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
