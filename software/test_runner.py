@@ -60,17 +60,34 @@ def parse_context_file(path: Path) -> dict:
         "difficulty": "L1",
     }
 
+    # Collect full 需求描述 section (all lines until next ##)
+    desc_lines = []
+    in_desc = False
     for line in content.splitlines():
-        line = line.strip()
-        if line.startswith("## 需求描述") or line.startswith("# Context:"):
-            # Capture the description section
+        stripped = line.strip()
+        if stripped.startswith("## 需求描述") or stripped.startswith("# Context:"):
+            in_desc = True
             continue
-        if line.startswith("##"):
+        if stripped.startswith("##"):
+            in_desc = False
             break
-        if any(line.startswith(k) for k in ["我要", "做一個", "幫我做", "幫我做"]):
-            result["intent_text"] = line
+        if in_desc:
+            desc_lines.append(stripped)
+
+    # Join all description lines
+    result["intent_text"] = " ".join(desc_lines)
+
+    # Theme detection
+    for line in content.splitlines():
         if "預期產出" in line or "主題" in line:
-            result["expected_theme"] = "glass" if "glass" in line.lower() else result["expected_theme"]
+            if "glass" in line.lower():
+                result["expected_theme"] = "glass"
+            elif "soft" in line.lower():
+                result["expected_theme"] = "soft"
+            elif "brutal" in line.lower():
+                result["expected_theme"] = "brutal"
+            elif "modern" in line.lower():
+                result["expected_theme"] = "modern"
 
     if not result["intent_text"]:
         # Fallback: take first non-header line

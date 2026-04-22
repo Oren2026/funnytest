@@ -44,41 +44,69 @@ def infer_schema(profile: IntentProfile) -> List[Dict]:
 
 
 def _infer_crud_schema(profile: IntentProfile) -> List[Dict]:
-    """CRUD schema：基礎欄位 + 根據實體調整"""
+    """CRUD schema：基礎欄位 + 根據實體調整 + 從 context 解析具體欄位"""
+    import re
     schema = []
     entity_name = profile.entities[0] if profile.entities else "項目"
+    context = profile.context
 
-    # ID
+    # 嘗試從 context 解析具體欄位（格式：顯示OO列表（XX、XX、XX））
+    explicit_fields = []
+    field_pattern = re.search(r'（([^）]+)）', context)
+    if field_pattern:
+        explicit_fields = [f.strip() for f in field_pattern.group(1).split('、')]
+
+    # ID（幾乎都有）
     schema.append({"name": "id", "label": "ID", "type": "text", "required": False, "editable": False})
 
-    # 根據實體調整 title label
-    title_labels = {
-        "任務": "任務名稱",
-        "庫存": "商品名稱",
-        "客戶": "客戶名稱",
-        "報表": "報表名稱",
-    }
-    title_label = title_labels.get(entity_name, f"{entity_name}名稱")
+    # 如果有明確欄位，用明確欄位；否則用 entity fallback
+    if explicit_fields:
+        # 第一個欄位當 title/name
+        primary = explicit_fields[0]
+        schema.append({"name": "title", "label": primary, "type": "text", "required": True, "editable": True})
+        # 其餘欄位根據名稱推斷類型
+        for field in explicit_fields[1:]:
+            f_lower = field.lower()
+            if any(kw in f_lower for kw in ['分類', '類型', 'category', 'type']):
+                schema.append({"name": "category", "label": field, "type": "text", "required": False, "editable": True})
+            elif any(kw in f_lower for kw in ['庫存', '庫存狀態', '庫存水位']):
+                schema.append({"name": "stockStatus", "label": field, "type": "badge",
+                               "required": False, "editable": True, "options": ["有貨", "缺貨", "補貨中"], "default": "有貨"})
+            elif any(kw in f_lower for kw in ['作者', '建立人', '負責人']):
+                schema.append({"name": "author", "label": field, "type": "text", "required": False, "editable": True})
+            elif any(kw in f_lower for kw in ['數量', '庫存數量', '庫存']):
+                schema.append({"name": "quantity", "label": field, "type": "text", "required": False, "editable": True})
+            elif any(kw in f_lower for kw in ['價格', '單價', '成本']):
+                schema.append({"name": "price", "label": field, "type": "text", "required": False, "editable": True})
+            elif any(kw in f_lower for kw in ['電話', 'email', 'mail', '信箱']):
+                schema.append({"name": "contact", "label": field, "type": "text", "required": False, "editable": True})
+            elif any(kw in f_lower for kw in ['狀態', 'status']):
+                schema.append({"name": "status", "label": field, "type": "badge",
+                               "required": False, "editable": True, "options": ["進行中", "已完成", "待處理"], "default": "待處理"})
+            else:
+                schema.append({"name": "description", "label": field, "type": "text", "required": False, "editable": True})
+    else:
+        # 根據實體調整 title label（原本的 fallback 邏輯）
+        title_labels = {
+            "任務": "任務名稱",
+            "庫存": "商品名稱",
+            "客戶": "客戶名稱",
+            "報表": "報表名稱",
+        }
+        title_label = title_labels.get(entity_name, f"{entity_name}名稱")
+        schema.append({"name": "title", "label": title_label, "type": "text", "required": True, "editable": True})
 
-    schema.append({"name": "title", "label": title_label, "type": "text", "required": True, "editable": True})
+        if "描述" in context or "description" in context.lower():
+            schema.append({"name": "description", "label": "描述", "type": "text", "required": False, "editable": True})
 
-    # 如果有"描述"相關實體
-    if "描述" in profile.context or "description" in profile.context.lower():
-        schema.append({"name": "description", "label": "描述", "type": "text", "required": False, "editable": True})
+        if entity_name in ["任務", "待辦", "工作"]:
+            schema.append({"name": "priority", "label": "優先權", "type": "badge", "required": False, "editable": True, "options": ["高", "中", "低"], "default": "中"})
+            schema.append({"name": "status", "label": "狀態", "type": "badge", "required": False, "editable": True, "options": ["進行中", "已完成", "待處理"], "default": "待處理"})
 
-    # 優先權（常見於任務、庫存）
-    if entity_name in ["任務", "待辦", "工作"]:
-        schema.append({"name": "priority", "label": "優先權", "type": "badge", "required": False, "editable": True, "options": ["高", "中", "低"], "default": "中"})
+        if entity_name in ["任務", "待辦", "工作", "庫存"]:
+            schema.append({"name": "dueDate", "label": "截止日期", "type": "date", "required": False, "editable": True})
 
-    # 狀態
-    if entity_name in ["任務", "待辦", "工作"]:
-        schema.append({"name": "status", "label": "狀態", "type": "badge", "required": False, "editable": True, "options": ["進行中", "已完成", "待處理"], "default": "待處理"})
-
-    # 截止日期（任務常見）
-    if entity_name in ["任務", "待辦", "工作", "庫存"]:
-        schema.append({"name": "dueDate", "label": "截止日期", "type": "date", "required": False, "editable": True})
-
-    # 日期欄位
+    # 日期欄位（通常要有）
     schema.append({"name": "createdAt", "label": "建立時間", "type": "date", "required": False, "editable": False})
     schema.append({"name": "updatedAt", "label": "更新時間", "type": "date", "required": False, "editable": False})
 

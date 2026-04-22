@@ -3,8 +3,20 @@
 <head>
   <meta charset='UTF-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-  <title>庫存 - 我要一個庫存管理網頁，功能包含：</title>
+  <title>庫存 -  我要一個庫存管理網頁，功能包含： - 顯示商品列表（名稱、分類、數量、狀態） </title>
   <style>
+.warehouse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #1a1a2e;
+  color: #fff;
+  border-bottom: 1px solid #16213e;
+}
+.header-title { font-size: 20px; font-weight: 600; }
+.header-actions { display: flex; gap: 8px; }
+
 .inventory-table-wrapper { overflow-x: auto; }
 .inventory-table {
   width: 100%;
@@ -73,38 +85,15 @@
 .confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
 .confirm-actions { display: flex; gap: 8px; justify-content: center; }
 
-.toast-container {
-  position: fixed; bottom: 24px; right: 24px;
-  display: flex; flex-direction: column; gap: 8px;
-  z-index: 9999;
-}
-.toast {
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 14px;
+.badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  animation: toastIn 0.2s ease;
 }
-.toast-success { background: #059669; color: #fff; }
-.toast-error { background: #dc2626; color: #fff; }
-.toast-warning { background: #d97706; color: #fff; }
-@keyframes toastIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-.warehouse-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: #1a1a2e;
-  color: #fff;
-  border-bottom: 1px solid #16213e;
-}
-.header-title { font-size: 20px; font-weight: 600; }
-.header-actions { display: flex; gap: 8px; }
+.badge-ok { background: #d1fae5; color: #059669; }
+.badge-warning { background: #fef3c7; color: #d97706; }
+.badge-danger { background: #fee2e2; color: #dc2626; }
 
 .modal-overlay {
   position: fixed; inset: 0;
@@ -364,7 +353,7 @@ body {
 </div></div>
     <div data-slot="content"><div class="inventory-table-wrapper">
   <table class="inventory-table">
-    <thead><tr><th>ID</th><th>商品名稱</th><th>截止日期</th><th>建立時間</th><th>更新時間</th><th class="col-actions">操作</th></tr></thead>
+    <thead><tr><th>ID</th><th>名稱</th><th>分類</th><th>數量</th><th>狀態</th><th>建立時間</th><th>更新時間</th><th class="col-actions">操作</th></tr></thead>
     <tbody id="inventory-body"><!-- slot:tbody --></tbody>
   </table>
 </div></div>
@@ -377,12 +366,23 @@ body {
     </div>
     <form id="inventory-form" class="modal-form">      <input type="hidden" id="edit-id" />
       <div class="form-group">
-        <label>商品名稱</label>
+        <label>名稱</label>
         <input type="text" id="field-title" />
       </div>
       <div class="form-group">
-        <label>截止日期</label>
-        <input type="date" id="field-dueDate" />
+        <label>分類</label>
+        <input type="text" id="field-category" />
+      </div>
+      <div class="form-group">
+        <label>數量</label>
+        <input type="text" id="field-quantity" />
+      </div>
+      <div class="form-group">
+        <label>狀態</label>
+        <select id="field-status">
+          <option value="">請選擇</option>
+          <option value="進行中">進行中</option>          <option value="已完成">已完成</option>          <option value="待處理">待處理</option>
+        </select>
       </div>
       <div class="form-actions">
         <button type="button" class="btn-cancel" onclick="closeModal()">取消</button>
@@ -415,7 +415,7 @@ function showToast(message, type) {
 </script></div>
 </div>
 <script>
-var STATE_KEY = 'evcompiler_庫存_-_我要一個庫存管理網頁，功能包含';
+var STATE_KEY = 'evcompiler_庫存_-__我要一個庫存管理網頁，功能包';
 function saveState() {
   try { localStorage.setItem(STATE_KEY, JSON.stringify({ items: STATE.items, nextId: STATE.nextId })); } catch(e) {}
 }
@@ -443,7 +443,9 @@ function openAdd() {
   document.getElementById('modal-title').textContent = '新增項目';
   document.getElementById('edit-id').value = '';
   document.getElementById('field-title').value = '';
-  document.getElementById('field-dueDate').value = '';
+  document.getElementById('field-category').value = '';
+  document.getElementById('field-quantity').value = '';
+  document.getElementById('field-status').value = '';
   document.getElementById('form-modal').style.display = 'flex';
 }
 
@@ -453,7 +455,9 @@ function openEdit(id) {
   document.getElementById('modal-title').textContent = '編輯項目';
   document.getElementById('edit-id').value = id;
   document.getElementById('field-title').value = item.title || '';
-  document.getElementById('field-dueDate').value = item.dueDate || '';
+  document.getElementById('field-category').value = item.category || '';
+  document.getElementById('field-quantity').value = item.quantity || '';
+  document.getElementById('field-status').value = item.status || '';
   document.getElementById('form-modal').style.display = 'flex';
 }
 
@@ -520,7 +524,9 @@ document.getElementById('inventory-form').addEventListener('submit', function(e)
   e.preventDefault();
   var data = {
     title: document.getElementById('field-title').value.trim(),
-    dueDate: document.getElementById('field-dueDate').value,
+    category: document.getElementById('field-category').value.trim(),
+    quantity: document.getElementById('field-quantity').value.trim(),
+    status: document.getElementById('field-status').value,
   };
   var editId = document.getElementById('edit-id').value;
   if (editId) {
@@ -559,7 +565,7 @@ function render() {
     var cmp = va < vb ? -1 : va > vb ? 1 : 0;
     return dir === 'asc' ? cmp : -cmp;
   });
-  var schemaFields = [{ name: "id", type: "text" }, { name: "title", type: "text" }, { name: "dueDate", type: "date" }, { name: "createdAt", type: "date" }, { name: "updatedAt", type: "date" }, { name: "actions", type: "action" }];
+  var schemaFields = [{ name: "id", type: "text" }, { name: "title", type: "text" }, { name: "category", type: "text" }, { name: "quantity", type: "text" }, { name: "status", type: "badge" }, { name: "createdAt", type: "date" }, { name: "updatedAt", type: "date" }, { name: "actions", type: "action" }];
   tbody.innerHTML = items.map(function(item) {
     var completed = item.completed ? ' todo-completed' : '';
     var cells = [];
@@ -569,7 +575,9 @@ function render() {
       switch (col.name) {
     case "id": return `<td>${item.id}</td>`;
     case "title": return `<td>${item.title}</td>`;
-    case "dueDate": return `<td class="col-date">${item.dueDate}</td>`;
+    case "category": return `<td>${item.category}</td>`;
+    case "quantity": return `<td>${item.quantity}</td>`;
+    case "status": return _renderBadge(item.status, item);
     case "createdAt": return `<td class="col-date">${item.createdAt}</td>`;
     case "updatedAt": return `<td class="col-date">${item.updatedAt}</td>`;
     case "actions": return _renderActions(item);
