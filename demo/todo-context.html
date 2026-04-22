@@ -19,18 +19,6 @@
 .confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
 .confirm-actions { display: flex; gap: 8px; justify-content: center; }
 
-.warehouse-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: #1a1a2e;
-  color: #fff;
-  border-bottom: 1px solid #16213e;
-}
-.header-title { font-size: 20px; font-weight: 600; }
-.header-actions { display: flex; gap: 8px; }
-
 .inventory-table-wrapper { overflow-x: auto; }
 .inventory-table {
   width: 100%;
@@ -84,6 +72,18 @@
 }
 .btn-delete:hover { background: #fef2f2; }
 .empty-state { text-align: center; color: #94a3b8; padding: 40px !important; }
+
+.warehouse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #1a1a2e;
+  color: #fff;
+  border-bottom: 1px solid #16213e;
+}
+.header-title { font-size: 20px; font-weight: 600; }
+.header-actions { display: flex; gap: 8px; }
 
 .badge {
   padding: 2px 8px;
@@ -534,10 +534,15 @@ document.getElementById('inventory-form').addEventListener('submit', function(e)
   var editId = document.getElementById('edit-id').value;
   if (editId) {
     var idx = STATE.items.findIndex(function(x) { return x.id === parseInt(editId); });
-    if (idx !== -1) STATE.items[idx] = Object.assign({}, STATE.items[idx], data);
+    if (idx !== -1) {
+      data.updatedAt = new Date().toLocaleDateString('zh-TW');
+      STATE.items[idx] = Object.assign({}, STATE.items[idx], data);
+    }
     showToast('已更新', 'success');
   } else {
     data.id = STATE.nextId++;
+    data.createdAt = new Date().toLocaleDateString('zh-TW');
+    data.updatedAt = new Date().toLocaleDateString('zh-TW');
     STATE.items.push(data);
     showToast('已新增', 'success');
   }

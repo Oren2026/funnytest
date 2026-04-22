@@ -5,27 +5,6 @@
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <title>庫存 - 我要一個庫存管理網頁，功能包含：</title>
   <style>
-.toast-container {
-  position: fixed; bottom: 24px; right: 24px;
-  display: flex; flex-direction: column; gap: 8px;
-  z-index: 9999;
-}
-.toast {
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  animation: toastIn 0.2s ease;
-}
-.toast-success { background: #059669; color: #fff; }
-.toast-error { background: #dc2626; color: #fff; }
-.toast-warning { background: #d97706; color: #fff; }
-@keyframes toastIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
 .inventory-table-wrapper { overflow-x: auto; }
 .inventory-table {
   width: 100%;
@@ -80,18 +59,6 @@
 .btn-delete:hover { background: #fef2f2; }
 .empty-state { text-align: center; color: #94a3b8; padding: 40px !important; }
 
-.warehouse-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: #1a1a2e;
-  color: #fff;
-  border-bottom: 1px solid #16213e;
-}
-.header-title { font-size: 20px; font-weight: 600; }
-.header-actions { display: flex; gap: 8px; }
-
 .confirm-panel {
   background: #fff;
   border-radius: 12px;
@@ -105,6 +72,39 @@
 .confirm-panel h3 { margin: 0 0 8px; font-size: 18px; color: #1e293b; }
 .confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
 .confirm-actions { display: flex; gap: 8px; justify-content: center; }
+
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px;
+  display: flex; flex-direction: column; gap: 8px;
+  z-index: 9999;
+}
+.toast {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: toastIn 0.2s ease;
+}
+.toast-success { background: #059669; color: #fff; }
+.toast-error { background: #dc2626; color: #fff; }
+.toast-warning { background: #d97706; color: #fff; }
+@keyframes toastIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.warehouse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #1a1a2e;
+  color: #fff;
+  border-bottom: 1px solid #16213e;
+}
+.header-title { font-size: 20px; font-weight: 600; }
+.header-actions { display: flex; gap: 8px; }
 
 .modal-overlay {
   position: fixed; inset: 0;
@@ -525,10 +525,15 @@ document.getElementById('inventory-form').addEventListener('submit', function(e)
   var editId = document.getElementById('edit-id').value;
   if (editId) {
     var idx = STATE.items.findIndex(function(x) { return x.id === parseInt(editId); });
-    if (idx !== -1) STATE.items[idx] = Object.assign({}, STATE.items[idx], data);
+    if (idx !== -1) {
+      data.updatedAt = new Date().toLocaleDateString('zh-TW');
+      STATE.items[idx] = Object.assign({}, STATE.items[idx], data);
+    }
     showToast('已更新', 'success');
   } else {
     data.id = STATE.nextId++;
+    data.createdAt = new Date().toLocaleDateString('zh-TW');
+    data.updatedAt = new Date().toLocaleDateString('zh-TW');
     STATE.items.push(data);
     showToast('已新增', 'success');
   }
