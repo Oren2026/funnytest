@@ -92,6 +92,7 @@ def _infer_crud_schema(profile: IntentProfile) -> List[Dict]:
             "庫存": "商品名稱",
             "客戶": "客戶名稱",
             "報表": "報表名稱",
+            "書籍": "書名",
         }
         title_label = title_labels.get(entity_name, f"{entity_name}名稱")
         schema.append({"name": "title", "label": title_label, "type": "text", "required": True, "editable": True})

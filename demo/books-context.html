@@ -3,22 +3,8 @@
 <head>
   <meta charset='UTF-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-  <title>庫存 -  我要一個書籍管理網頁，功能包含： - 顯示書籍列表（書名、作者、分類、庫存狀態</title>
+  <title>書籍 -  我要一個書籍管理網頁，功能包含： - 顯示書籍列表（書名、作者、分類、庫存狀態</title>
   <style>
-.confirm-panel {
-  background: #fff;
-  border-radius: 12px;
-  padding: 32px;
-  width: 360px;
-  max-width: 90vw;
-  text-align: center;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-}
-.confirm-icon { font-size: 40px; margin-bottom: 16px; }
-.confirm-panel h3 { margin: 0 0 8px; font-size: 18px; color: #1e293b; }
-.confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
-.confirm-actions { display: flex; gap: 8px; justify-content: center; }
-
 .inventory-table-wrapper { overflow-x: auto; }
 .inventory-table {
   width: 100%;
@@ -84,6 +70,20 @@
 }
 .header-title { font-size: 20px; font-weight: 600; }
 .header-actions { display: flex; gap: 8px; }
+
+.confirm-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  width: 360px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.confirm-icon { font-size: 40px; margin-bottom: 16px; }
+.confirm-panel h3 { margin: 0 0 8px; font-size: 18px; color: #1e293b; }
+.confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
+.confirm-actions { display: flex; gap: 8px; justify-content: center; }
 
 .badge {
   padding: 2px 8px;
@@ -352,7 +352,7 @@ body {
 <div class="page-wrapper">
   <div data-slot="header"><header class="warehouse-header">
   <div class="header-left">
-    <span class="header-title">📦 庫存</span>
+    <span class="header-title">📦 書籍</span>
   </div>
   <div class="header-actions" data-slot="actions"><button class="btn-primary" onclick="openAdd()">+ 新增</button>
   </div>
@@ -443,7 +443,7 @@ function showToast(message, type) {
 </script></div>
 </div>
 <script>
-var STATE_KEY = 'evcompiler_庫存_-__我要一個書籍管理網頁，功能包';
+var STATE_KEY = 'evcompiler_書籍_-__我要一個書籍管理網頁，功能包';
 function saveState() {
   try { localStorage.setItem(STATE_KEY, JSON.stringify({ items: STATE.items, nextId: STATE.nextId })); } catch(e) {}
 }
