@@ -3,7 +3,7 @@
 ## 基本資訊
 - **口號**: 「能做軟體的軟體」—— 輸入自然語法意圖，輸出完整、可用的軟體
 - **願景**: 軟體是 AI 用的工具，輸出要有品質，内部不需要 UI
-- **位置**: `~/Desktop/Oren_own/evolution_compiler/`
+- **位置**: `~/Desktop/funnytest/`（Hermes 獨立工作區）
 - **Repo**: git@github.com:Oren2026/funnytest.git
 
 ## 核心架構（確立的共識）
@@ -77,9 +77,11 @@ Engine 支援遞迴依賴解析：`<use name="queue-static">` → 自動展開�
 - [x] Intent Classifier / Schema Inferrer / Skill Router / Dependency Resolver / Composer / QA Checker 六節點落地
 - [x] 9 UI skills + 4 Theme skills
 
-## 待解決問題（2026-04-21 發現）
-- **composer.py bug**: `_compose_html()` 內有大量 hardcoded table-data 邏輯（line 270-320），skill block 拼接方式導致 schema-driven 表單/JS 未正確注入。test_runner.py 測試時會暴露此問題。
-- **根本原因**: composer 沒有真正做到「技能組合」，而是 hardcoded 了一堆 layout 邏輯
+## 待解決問題（2026-04-21 發現，2026-04-22 修復）
+- ~~**composer.py bug**: `_compose_html()` `_renderActions` 無「標記完成」按鈕，`toggleComplete` 函式有引用但未定義~~ ✅ 已修復
+  - composer.py: 新增 `toggleComplete(id)` 函式 + `_renderActions` 加入 ○/✓ 完成按鈕 + btn-done CSS
+  - html_compiler.py: 同步修復（平行實作）
+  - 現已可正常「標記為已完成」功能
 
 ## 技術決策摘要
 - 不要靠單一強節點補償，要各節點高效益運算
@@ -96,7 +98,7 @@ Engine 支援遞迴依賴解析：`<use name="queue-static">` → 自動展開�
 4. **review-1** — 驗證補足技能後輸出品質變化（next）
 
 ### 目前處於
-**v0.9** — composer 重構完成，skill-based composition + slot injection，test_runner QA 0 issues
+**v0.9.1** — toggleComplete bug 修復，_renderActions 加入完成按鈕
 **下一步** — review-1：第一輪回顧，驗證新技能組合輸出品質
 
 ### 迭代節奏
@@ -105,4 +107,4 @@ Engine 支援遞迴依賴解析：`<use name="queue-static">` → 自動展開�
 - 兩三天後根據實際輸出品質決定下一步
 
 ## 最後更新
-2026-04-22
+2026-04-22（v0.9.1）
