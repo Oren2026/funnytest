@@ -1,0 +1,7 @@
+{
+  "id": "html_compiler",
+  "name": "HTML Compiler",
+  "description": "將自然語言意圖轉換為高質量 HTML/CSS 介面，支援響應式設計和現代 CSS 技巧",
+  "tags": ["html", "css", "ui", "frontend"],
+  "created_by": "Hermes Coder"
+}

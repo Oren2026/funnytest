@@ -46,7 +46,7 @@ def infer_schema(profile: IntentProfile) -> List[Dict]:
 def _infer_crud_schema(profile: IntentProfile) -> List[Dict]:
     """CRUD schema：基礎欄位 + 根據實體調整 + 從 context 解析具體欄位"""
     import re
-    schema = []
+    editable_fields = []  # [name, label, type, ...]
     entity_name = profile.entities[0] if profile.entities else "項目"
     context = profile.context
 
@@ -56,35 +56,32 @@ def _infer_crud_schema(profile: IntentProfile) -> List[Dict]:
     if field_pattern:
         explicit_fields = [f.strip() for f in field_pattern.group(1).split('、')]
 
-    # ID（幾乎都有）
-    schema.append({"name": "id", "label": "ID", "type": "text", "required": False, "editable": False})
-
     # 如果有明確欄位，用明確欄位；否則用 entity fallback
     if explicit_fields:
         # 第一個欄位當 title/name
         primary = explicit_fields[0]
-        schema.append({"name": "title", "label": primary, "type": "text", "required": True, "editable": True})
+        editable_fields.append({"name": "title", "label": primary, "type": "text", "required": True, "editable": True})
         # 其餘欄位根據名稱推斷類型
         for field in explicit_fields[1:]:
             f_lower = field.lower()
             if any(kw in f_lower for kw in ['分類', '類型', 'category', 'type']):
-                schema.append({"name": "category", "label": field, "type": "text", "required": False, "editable": True})
+                editable_fields.append({"name": "category", "label": field, "type": "text", "required": False, "editable": True})
             elif any(kw in f_lower for kw in ['庫存', '庫存狀態', '庫存水位']):
-                schema.append({"name": "stockStatus", "label": field, "type": "badge",
+                editable_fields.append({"name": "stockStatus", "label": field, "type": "badge",
                                "required": False, "editable": True, "options": ["有貨", "缺貨", "補貨中"], "default": "有貨"})
             elif any(kw in f_lower for kw in ['作者', '建立人', '負責人']):
-                schema.append({"name": "author", "label": field, "type": "text", "required": False, "editable": True})
+                editable_fields.append({"name": "author", "label": field, "type": "text", "required": False, "editable": True})
             elif any(kw in f_lower for kw in ['數量', '庫存數量', '庫存']):
-                schema.append({"name": "quantity", "label": field, "type": "text", "required": False, "editable": True})
+                editable_fields.append({"name": "quantity", "label": field, "type": "text", "required": False, "editable": True})
             elif any(kw in f_lower for kw in ['價格', '單價', '成本']):
-                schema.append({"name": "price", "label": field, "type": "text", "required": False, "editable": True})
+                editable_fields.append({"name": "price", "label": field, "type": "text", "required": False, "editable": True})
             elif any(kw in f_lower for kw in ['電話', 'email', 'mail', '信箱']):
-                schema.append({"name": "contact", "label": field, "type": "text", "required": False, "editable": True})
+                editable_fields.append({"name": "contact", "label": field, "type": "text", "required": False, "editable": True})
             elif any(kw in f_lower for kw in ['狀態', 'status']):
-                schema.append({"name": "status", "label": field, "type": "badge",
+                editable_fields.append({"name": "status", "label": field, "type": "badge",
                                "required": False, "editable": True, "options": ["進行中", "已完成", "待處理"], "default": "待處理"})
             else:
-                schema.append({"name": "description", "label": field, "type": "text", "required": False, "editable": True})
+                editable_fields.append({"name": "description", "label": field, "type": "text", "required": False, "editable": True})
     else:
         # 根據實體調整 title label（原本的 fallback 邏輯）
         title_labels = {
@@ -95,26 +92,27 @@ def _infer_crud_schema(profile: IntentProfile) -> List[Dict]:
             "書籍": "書名",
         }
         title_label = title_labels.get(entity_name, f"{entity_name}名稱")
-        schema.append({"name": "title", "label": title_label, "type": "text", "required": True, "editable": True})
+        editable_fields.append({"name": "title", "label": title_label, "type": "text", "required": True, "editable": True})
 
         if "描述" in context or "description" in context.lower():
-            schema.append({"name": "description", "label": "描述", "type": "text", "required": False, "editable": True})
+            editable_fields.append({"name": "description", "label": "描述", "type": "text", "required": False, "editable": True})
 
         if entity_name in ["任務", "待辦", "工作"]:
-            schema.append({"name": "priority", "label": "優先權", "type": "badge", "required": False, "editable": True, "options": ["高", "中", "低"], "default": "中"})
-            schema.append({"name": "status", "label": "狀態", "type": "badge", "required": False, "editable": True, "options": ["進行中", "已完成", "待處理"], "default": "待處理"})
+            editable_fields.append({"name": "priority", "label": "優先權", "type": "badge", "required": False, "editable": True, "options": ["高", "中", "低"], "default": "中"})
+            editable_fields.append({"name": "status", "label": "狀態", "type": "badge", "required": False, "editable": True, "options": ["進行中", "已完成", "待處理"], "default": "待處理"})
 
         if entity_name in ["任務", "待辦", "工作", "庫存"]:
-            schema.append({"name": "dueDate", "label": "截止日期", "type": "date", "required": False, "editable": True})
+            editable_fields.append({"name": "dueDate", "label": "截止日期", "type": "date", "required": False, "editable": True})
 
-    # 日期欄位（通常要有）
-    schema.append({"name": "createdAt", "label": "建立時間", "type": "date", "required": False, "editable": False})
-    schema.append({"name": "updatedAt", "label": "更新時間", "type": "date", "required": False, "editable": False})
+    # Non-editable 欄位統一加在尾部（invariant: editable 在前，non-editable 在後）
+    non_editable = [
+        {"name": "id", "label": "ID", "type": "text", "required": False, "editable": False},
+        {"name": "createdAt", "label": "建立時間", "type": "date", "required": False, "editable": False},
+        {"name": "updatedAt", "label": "更新時間", "type": "date", "required": False, "editable": False},
+        {"name": "actions", "label": "操作", "type": "action", "required": False, "editable": False},
+    ]
 
-    # 操作
-    schema.append({"name": "actions", "label": "操作", "type": "action", "required": False, "editable": False})
-
-    return schema
+    return editable_fields + non_editable
 
 
 def _infer_dashboard_schema(profile: IntentProfile) -> List[Dict]:

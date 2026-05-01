@@ -1,0 +1,7 @@
+{
+  "id": "web_search",
+  "name": "Web Search",
+  "description": "網路資訊檢索和事實核查，幫助用戶快速找到準確資訊",
+  "tags": ["search", "web", "fact-check", "info"],
+  "created_by": "Hermes Coder"
+}

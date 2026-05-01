@@ -1,0 +1,7 @@
+{
+  "id": "arxiv_search",
+  "name": "ArXiv Search",
+  "description": "學術論文檢索和分析，從 arxiv.org 獲取最新研究資訊",
+  "tags": ["research", "paper", "arxiv", "academic"],
+  "created_by": "Hermes Coder"
+}

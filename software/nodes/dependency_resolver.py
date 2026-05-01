@@ -71,16 +71,20 @@ def resolve_dependencies(skill_names: List[str], skills_base: Path) -> List[Dict
             in_degree[dep] += 1
 
     # Kahn's algorithm
-    queue = [n for n in all_nodes if in_degree.get(n, 0) == 0]
+    # 初始佇列：所有入度=0 的節點，按字母順序排序（穩定 tiebreaker）
+    queue = sorted([n for n in all_nodes if in_degree.get(n, 0) == 0])
     ordered = []
 
     while queue:
+        # 取佇列第一個（已排序），並對鄰居遞減 in-degree
         node = queue.pop(0)
         ordered.append(node)
         for neighbor in graph.get(node, []):
             in_degree[neighbor] -= 1
             if in_degree[neighbor] == 0 and neighbor not in ordered:
+                # 維持佇列排序（in-degree=0 的新節點插入維持順序）
                 queue.append(neighbor)
+                queue.sort()  # 保持字母順序
 
     # 檢查循環
     if len(ordered) != len(all_nodes):

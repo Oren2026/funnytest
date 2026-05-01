@@ -7,3 +7,14 @@ build/
 *.c
 .vscode/
 .DS_Store
+
+# Auth & credentials
+auth.json
+hermes-chat/
+
+# Agent configs
+subagents.json
+agent_skills.json
+
+# Session data
+*.sock

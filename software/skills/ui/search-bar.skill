@@ -1,6 +1,96 @@
 # skill: search-bar
-# depends: none
-# prohibit: none
+
+## Contract
+- **語義承諾**：提供搜尋框與篩選工具列，讓使用者輸入關鍵字、選擇分類、切換排序方式，驅動 STATE.filter 的更新
+- **輸入資料格式**：
+  - 搜尋關鍵字：`string`（任意文字）
+  - 分類過濾：`string`（空字串代表全部分類）
+  - 排序方式：`string`（格式：`field-direction`，如 `updatedAt-desc`、`name-asc`）
+- **輸出語義**：渲染工具列 HTML，包含搜尋輸入框、分類下拉選單、排序下拉選單，附帶 `oninput`/`onchange` 事件更新 STATE
+- **操作邊界**：
+  - ✅ 做：輸入事件更新 STATE.filter、更新 URL 參數（可選）、立即觸發 render() 重新渲染清單
+  - ❌ 不做：不直接過濾資料（由 render() 函式讀取 STATE.filter 自行過濾）、不做網路請求、不做 URL 持久化（URL 可選）
+- **失敗信號**：
+  - 搜尋框有值但 render() 未正確讀取 STATE.filter.search → 畫面無回應
+  - 分類/排序選項改變但未觸發 render() → 畫面不同步
+
+## Dependencies
+- **依賴**：無
+- **可選依賴**：無
+- **排斥**：無
+
+## Slots
+- **slot:filter**：篩選控制區，屬於 search-bar 自身提供的 slot，與 page layout 的 slot:search 對齊
+  - 注入內容：搜尋框 + 分類下拉 + 排序下拉
+  - 由 search-bar skill 自己提供，不需要外部注入
+
+## Boundaries
+- **系統邊界**：Presentation Layer（只處理 UI 輸入，不管資料過濾邏輯）
+- **操作邊界**：
+  - ✅ 操作：DOM 渲染、使用者輸入事件（oninput, onchange）、寫入 STATE.filter
+  - ❌ 不操作：localStorage、網路請求、資料本身
+- **狀態邊界**：Stateless（本身不保有狀態，狀態由外部 STATE 管理）
+
+## Examples
+
+### 基本用法
+**STATE**：
+```javascript
+STATE = { filter: { search: '', sort: 'updatedAt-desc' } }
+```
+**輸出**：
+```html
+<div class="toolbar">
+  <div class="search-box">
+    <input type="text" id="search-input" placeholder="搜尋名稱..." oninput="handleSearch(this.value)" />
+  </div>
+  <div class="filter-group">
+    <select id="filter-category" onchange="handleFilter(this.value)">
+      <option value="">全部分類</option>
+      <option value="電子元件">電子元件</option>
+      <option value="工具">工具</option>
+      <option value="原料">原料</option>
+      <option value="包裝">包裝</option>
+    </select>
+    <select id="sort-by" onchange="handleSort(this.value)">
+      <option value="updatedAt-desc">最近更新</option>
+      <option value="name-asc">名稱 A-Z</option>
+      <option value="name-desc">名稱 Z-A</option>
+      <option value="quantity-asc">數量 ↑</option>
+      <option value="quantity-desc">數量 ↓</option>
+    </select>
+  </div>
+</div>
+```
+
+### 搜尋行為
+**觸發**：使用者在搜尋框輸入「螺絲」
+**行為**：
+1. `handleSearch("螺絲")` 被呼叫
+2. `STATE.filter.search = "螺絲"`
+3. `render()` 被觸發
+4. `render()` 中讀取 `STATE.filter.search`，過濾 `STATE.items`
+
+### 排序切換
+**觸發**：選擇「名稱 A-Z」
+**行為**：
+1. `handleSort("name-asc")` 被呼叫
+2. `STATE.filter.sort = "name-asc"`
+3. `render()` 被觸發
+4. `render()` 中解析 sort 值並對 items 排序
+
+### render() 中的過濾邏輯（外部提供）
+```javascript
+function render() {
+  var items = STATE.items.filter(function(item) {
+    if (!STATE.filter.search) return true;
+    return Object.values(item).some(function(v) {
+      return String(v).toLowerCase().includes(STATE.filter.search.toLowerCase());
+    });
+  });
+  // ...
+}
+```
 
 [html]
 <div class="toolbar">

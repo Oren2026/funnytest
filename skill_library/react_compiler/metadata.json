@@ -1,0 +1,7 @@
+{
+  "id": "react_compiler",
+  "name": "React Compiler",
+  "description": "React 元件和 Hooks 生成專家，輸出現代、可維護的 React 程式碼",
+  "tags": ["react", "javascript", "frontend", "hooks"],
+  "created_by": "Hermes Coder"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "code_generation",
+  "name": "Code Generation",
+  "description": "通用程式碼生成技能，涵蓋 Python/JavaScript/工具腳本，強調可讀性和錯誤處理",
+  "tags": ["python", "javascript", "backend", "scripting"],
+  "created_by": "Hermes Coder"
+}

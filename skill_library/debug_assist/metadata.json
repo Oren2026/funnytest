@@ -1,0 +1,7 @@
+{
+  "id": "debug_assist",
+  "name": "Debug Assistant",
+  "description": "錯誤分析與修復專家，系統化定位問題根因並給出修復方案",
+  "tags": ["debug", "error", "fix", "troubleshooting"],
+  "created_by": "Hermes Coder"
+}
