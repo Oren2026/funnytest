@@ -20,9 +20,8 @@
 - **排斥**：無
 
 ## Slots
-- **slot:filter**：篩選控制區，屬於 search-bar 自身提供的 slot，與 page layout 的 slot:search 對齊
-  - 注入內容：搜尋框 + 分類下拉 + 排序下拉
-  - 由 search-bar skill 自己提供，不需要外部注入
+- **slot:search**：搜尋與過濾控制區（Composer calls this as "search" slot）
+- **slot:filter**：搜尋/過濾控制區（搜尋框 + 分類 + 排序）
 
 ## Boundaries
 - **系統邊界**：Presentation Layer（只處理 UI 輸入，不管資料過濾邏輯）

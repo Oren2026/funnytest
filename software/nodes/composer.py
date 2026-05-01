@@ -103,10 +103,10 @@ def _parse_spec_sections(name: str, content: str) -> SkillSpec:
     slots_match = re.search(r"## Slots\n(.*?)(?=\n## |$)", content, re.DOTALL)
     if slots_match:
         slots_text = slots_match.group(1)
-        # slot:xxx 格式
-        for m in re.findall(r"\*\*slot:(\w+)\*\*[：:]?\s*(.*)", slots_text):
-            slot_name = m[0]
-            spec.slots_provides.append(slot_name)
+        # slot:xxx 格式（**slot:xxx** 或 ## Slots 中列出的 slot:xxx）
+        for m in re.findall(r"\*?\*?slot:(\w+)\*?\*?", slots_text):
+            if m not in spec.slots_provides:
+                spec.slots_provides.append(m)
         # 也解析 <!-- slot:xxx --> 語法（舊格式兼容）
         for m in re.findall(r"<!--\s*slot:(\w+)\s*-->", content):
             if m not in spec.slots_provides:

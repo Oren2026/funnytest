@@ -26,6 +26,7 @@
 - **排斥**：無
 
 ## Slots
+- **slot:modal**：表單弹窗本體（Composer calls this as "modal" slot）
 - **slot:form-fields**：表單欄位區域，由 Composer 根據 Schema 動態注入 input/select/textarea
   - 預設行為：若無注入，顯示標籤為「名稱 *」「分類 *」「數量 *」「安全存量」的四欄位表單
   - Composer 注入時替換 `<!-- slot:form-fields -->` 為動態欄位

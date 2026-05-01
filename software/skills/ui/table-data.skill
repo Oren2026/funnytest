@@ -31,10 +31,10 @@
 - **排斥**：無
 
 ## Slots
+- **slot:content**：整個表格區塊（Composer calls this as "content" slot），包含 thead/tbody/filter 的組合
 - **slot:thead**：欄位標題列，靜態定義（名稱、分類、數量、狀態、最後更新、操作）
 - **slot:tbody**：動態資料行，由 Composer 注入 `_renderRows(items, onEdit, onDelete)`
 - **slot:empty-state**：當 items 為空時顯示的提示訊息，預設「尚無庫存資料」
-- **slot:filter**：搜尋/過濾控制區，由 search-bar skill 注入
 
 ## Boundaries
 - **系統邊界**：Presentation Layer（只處理 UI 渲染，不管資料邏輯）
