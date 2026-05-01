@@ -5,22 +5,57 @@
 - **願景**: 軟體是 AI 用的工具，輸出要有品質，内部不需要 UI
 - **位置**: `~/Desktop/funnytest/`（Hermes 獨立工作區）
 - **Repo**: git@github.com:Oren2026/funnytest.git
+- **當前版本**: v2 — Spec-aware（Phase 1 完成）
 
-## 核心架構（確立的共識）
+## 核心架構（共識）
 
 ### Multi-Agent Routing
 每個節點分散決策，不靠單一強節點：
 1. **Intent Classifier** → 分析意圖類型（CRUD/遊戲/工具/資料視覺化...）
 2. **Schema Inferrer** → 根據類型推斷資料欄位和操作
 3. **Skill Router** → 分散式推理（不用 keyword map）
-4. **Composer** → 組合技能、解決依賴
+4. **Composer** → **Spec-aware 技能組合**，SkillRegistry 動態解析 slot
 5. **QA Checker** → 輸出前完整性、一致性、安全性檢查
 
-### 輸出格式（共識）
-- Explicit > Abstract（已實測驗證）
-- 抽象 constraint 標籤（如 `no_heap_allocation`）→ AI 遵從率 ~0%
-- 顯式禁止（如 `DO NOT use: malloc, calloc, realloc, free`）→ AI 遵從率 ~100%
-- 細粒度 skill > 粗粒度（+55-85%）
+### 核心進化（v2）
+從「技能拼接」（Skill Stitching）升級為「Spec 驅動組合」（Spec-driven Composition）。
+
+---
+
+## Phase 1 完成（2026-04-30）
+
+### Spec 格式標準 ✅
+- 檔案：`software/skills/_SPEC_FORMAT.md`
+- 定義五區塊：Contract / Dependencies / Slots / Boundaries / Examples
+- 取代舊格式：`# depends:` + `[html]` 區塊
+
+### table-data.skill Pilot ✅
+- 第一個完成 Spec 化的 Skill
+- Commit: `a089bcd`
+
+### Composer Spec-aware 改寫 ✅
+- 新增 `SkillSpec` dataclass：解析完整 Spec 五區塊
+- 新增 `SkillRegistry`：slot → skill 反冊索引
+- `_compose_html()` 用 Registry 解析 slot，fallback 有 Warning
+- Commit: `4048ab1`
+
+### L1 測試 ✅
+- PASSED — 0 issue(s)
+- Composer Warning 精確指出哪些 Skill 尚未 Spec 化
+
+---
+
+## Spec 化進度
+
+| 維度 | 舊版 | Spec 版 |
+|------|------|---------|
+| AI 組裝時 | 知道「怎麼拼」 | 知道「什麼情境用這個」 |
+| 失敗時 | 不清楚哪個 Skill 的問題 | 有 failure signal，可以定位 |
+| 缺口暴露 | 需要跑 QA 才發現 | Composer Warning 主動指出 |
+
+**進度：1/41**
+
+---
 
 ## seed 格式（共識）
 ```xml
@@ -46,65 +81,23 @@ sort-bubble, sort-insertion, search-linear, search-binary, linked-list-static, s
 ### 高層（4個，依賴中層）
 queue-static, sort-quick, daemon-loop, timer-periodic
 
-Engine 支援遞迴依賴解析：`<use name="queue-static">` → 自動展開依賴鏈。
+---
 
-## 已實作產物
+## 待定義：Phase 3 進階能力
 
-位於 `~/Desktop/Oren_own/evolution_compiler/`：
-- `parser.py` — 新格式解析（支援 `<use>`, `<prohibit>`, `<body>` 元件）
-- `validator.py` — 顯式禁止清單驗證
-- `ai_module.py` — 技能組合引擎（遞迴依賴解析）
-- `engine.py` — 協調器
-- `watch.py` — 語意指紋漂移控制
-- 16 個 .skill 檔案（6+6+4 分層結構）
+- `find_skill_for_slot()` 語意匹配（不只是名字包含）
+- `Contract.failure_signals` 驅動 QA 定位
+- `Boundaries` 驅動組裝時驗證
+- `Examples` 驅動 Spec-level 單元測試
 
-## 現有技能庫
-- **UI skills（9個）**: layout-header, table-data, button-primary/danger, modal-form, toast-notify, search-bar, badge-status, confirm-dialog
-- **Themes（4個）**: glass, modern, brutal, soft
-- **Section markers**: `[html]/[react]/[style]` 支援多平台輸出
+## 待解決問題
 
-## 尚未完成
-- [x] 技能缺口補足 — card-group, form-layout, pagination, tabs, sidebar, loading, empty-state, progress-bar（8/8 完成）
-- [x] gap-1. 技能缺口分析完成：原有9個 → 現在17個 UI 技能
-- [ ] Semantic intent parsing（脫離 keyword match）
-- [ ] 輸出品質驗證機制
-
-## 已完成（2026-04-21）
-- [x] ai_module.py 升級（遞迴依賴解析）
-- [x] engine.py 整合依賴解析
-- [x] 端到端測試：`<use name="queue-static" />` 遞迴展開驗證
-- [x] L1 測試流程 test_runner.py（初版完成）
-- [x] Intent Classifier / Schema Inferrer / Skill Router / Dependency Resolver / Composer / QA Checker 六節點落地
-- [x] 9 UI skills + 4 Theme skills
-
-## 待解決問題（2026-04-21 發現，2026-04-22 修復）
-- ~~**composer.py bug**: `_compose_html()` `_renderActions` 無「標記完成」按鈕，`toggleComplete` 函式有引用但未定義~~ ✅ 已修復
-  - composer.py: 新增 `toggleComplete(id)` 函式 + `_renderActions` 加入 ○/✓ 完成按鈕 + btn-done CSS
-  - html_compiler.py: 同步修復（平行實作）
-  - 現已可正常「標記為已完成」功能
-
-## 技術決策摘要
-- 不要靠單一強節點補償，要各節點高效益運算
-- 自然語意用 keyword match 而非 AI 推理（更穩定）
-- 軟體本體（software/）和測試產出（demo/）必須分開
-- subagent 複雜修改應從乾淨 HEAD 重新實作，不要 incremental patch
-
-## 迭代計劃（2026-04-21 起）
-
-### 兩三天內目標
-1. **技能缺口補足** — ✅ 完成（8/8）
-2. **L1 測試流程** — ✅ 完成（PASS 0 issues）
-3. **composer 重構** — ✅ 完成（skill-based composition）
-4. **review-1** — 驗證補足技能後輸出品質變化（next）
-
-### 目前處於
-**v0.9.1** — toggleComplete bug 修復，_renderActions 加入完成按鈕
-**下一步** — review-1：第一輪回顧，驗證新技能組合輸出品質
-
-### 迭代節奏
-- 每個 commit = 一個可運行狀態，不堆code不commit
-- commit 後更新 status.md 的「目前進展」與「待辦」
-- 兩三天後根據實際輸出品質決定下一步
+- [ ] 大多數 Skill 尚未 Spec 化（1/41）
+- [ ] Phase 3 Data Flow Validation 未完成（`validate_data_flow()` 是 stub）
+- [ ] React 輸出不完整
+- [ ] engine.py 仍是 C 代碼生成導向，與 L1 測試流程脫鉤
+- [ ] Skill Router 的 SKILL_INDEX 為靜態字典
+- [ ] Schema Inferrer 無 LLM
 
 ## 最後更新
-2026-04-22（v0.9.1）
+2026-04-30（Phase 1 完成，Spec-aware v2）
