@@ -1,7 +1,42 @@
-# skill: linear_search
-# depends: array-base,comparison
-# prohibit: malloc,calloc,realloc,free
+## Contract
+Linear search traverses an array sequentially until it finds a target value, returning its index (0-based) or -1 if not found. Time complexity: O(n). Space complexity: O(1).
 
+## Dependencies
+- `array-base`: Array parameter conventions (ptr + length)
+- `comparison`: `compare_eq(a, b)` for equality check
+
+## Prohibitions
+- `malloc`, `calloc`, `realloc`, `free` — no dynamic allocation
+
+## Slots
+| Slot | Type | Description |
+|------|------|-------------|
+| `arr[]` | `int[]` | Input array to search |
+| `n` | `int` | Number of elements in array |
+| `target` | `int` | Value to find |
+
+## Boundaries
+- Empty array (`n = 0`): returns -1 without entering loop
+- Target at index 0: returns 0 on first iteration
+- Target at last index: iterates through all n-1 elements
+- Target not present: completes full traversal, returns -1
+- Duplicate values: returns first occurrence (lowest index)
+
+## Examples
+```c
+// Found at index 2
+int arr[] = {10, 20, 30, 40};
+int idx = linear_search(arr, 4, 30);  // → 2
+
+// Not found
+int idx = linear_search(arr, 4, 99);   // → -1
+
+// Empty array
+int idx = linear_search(arr, 0, 10);   // → -1
+```
+
+[code]
+```c
 // Linear search — O(n), returns index or -1 if not found
 int linear_search(int arr[], int n, int target) {
     for (int i = 0; i < n; i++) {
@@ -11,3 +46,4 @@ int linear_search(int arr[], int n, int target) {
     }
     return -1;
 }
+```

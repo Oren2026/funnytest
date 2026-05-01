@@ -1,7 +1,38 @@
-# skill: comparison
-# depends: none
-# prohibit: none
+## Contract
+Branchless comparison utilities for two integers. Each function returns 1 if the condition holds, 0 otherwise. The `swap` function exchanges the values of two integers via pointers.
 
+## Dependencies
+none
+
+## Slots
+- `a` — first integer operand
+- `b` — second integer operand
+- For `swap`: `a` and `b` are pointer parameters (`int*`)
+
+## Boundaries
+- All comparison functions operate on `int` range (−2147483648 to 2147483647)
+- `swap` requires valid non-null pointers
+- No overflow protection on comparison operations
+
+## Examples
+
+```
+compare_gt(5, 3)  // returns 1
+compare_gt(2, 7)  // returns 0
+compare_gt(5, 5)  // returns 0
+
+compare_lt(2, 7)  // returns 1
+compare_lt(5, 5)  // returns 0
+
+compare_eq(4, 4)  // returns 1
+compare_eq(4, 2)  // returns 0
+
+int x = 3, y = 7;
+swap(&x, &y);     // x becomes 7, y becomes 3
+```
+
+[code]
+```c
 // Comparison utilities — branchless where possible
 int compare_gt(int a, int b) {
     return a > b ? 1 : 0;
@@ -20,3 +51,4 @@ void swap(int* a, int* b) {
     *a = *b;
     *b = tmp;
 }
+```

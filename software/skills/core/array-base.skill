@@ -1,7 +1,44 @@
-# skill: array-base
-# depends: none
-# prohibit: malloc,calloc,realloc,free
+## Contract
 
+Array base utilities providing read, write, and copy operations on integer arrays. Supports static buffer only — no dynamic memory allocation.
+
+## Dependencies
+
+none
+
+## Slots
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `array_copy` | `void array_copy(int dest[], const int src[], int n)` | Copy `n` elements from `src` to `dest` |
+| `array_fill` | `void array_fill(int arr[], int n, int value)` | Fill array of `n` elements with `value` |
+| `array_reverse` | `void array_reverse(int arr[], int n)` | Reverse array of `n` elements in-place |
+
+## Boundaries
+
+- **Memory**: No dynamic allocation permitted — `malloc`, `calloc`, `realloc`, `free` are prohibited
+- **Buffer**: Caller must ensure `dest` buffer is large enough for `n` elements in `array_copy`
+- **Bounds**: `n` must be non-negative; `array_reverse` requires `n >= 0`
+
+## Examples
+
+```c
+// Copy 5 elements
+int src[] = {1, 2, 3, 4, 5};
+int dest[5];
+array_copy(dest, src, 5);  // dest = {1, 2, 3, 4, 5}
+
+// Fill with zeros
+int arr[10];
+array_fill(arr, 10, 0);  // arr = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+// Reverse in-place
+int rev[] = {1, 2, 3, 4, 5};
+array_reverse(rev, 5);  // rev = {5, 4, 3, 2, 1}
+```
+
+[code]
+```c
 // Array base utilities — read, write, copy
 // Array copy — static buffer only
 void array_copy(int dest[], const int src[], int n) {
@@ -29,3 +66,5 @@ void array_reverse(int arr[], int n) {
         right--;
     }
 }
+```
+[/code]

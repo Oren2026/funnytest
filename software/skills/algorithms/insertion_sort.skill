@@ -1,7 +1,57 @@
 # skill: insertion_sort
-# depends: array-base,comparison
-# prohibit: malloc,calloc,realloc,free
 
+## Contract
+
+Insertion sort implementation — O(n²) time, O(1) space, stable. Efficient for small arrays and nearly-sorted data. Sorting is performed in-place using comparison-based element shifting.
+
+## Dependencies
+
+- `array-base` — array subscript and length conventions
+- `comparison` — `compare_gt(a, b)` returns true if a > b
+
+## Slots
+
+| Slot | Type | Description |
+|------|------|-------------|
+| `arr[]` | `int[]` | Input array to be sorted in-place |
+| `n` | `int` | Number of elements in arr |
+| `key` | `int` | Temporary variable for current element being inserted |
+| `j` | `int` | Index variable for backward traversal |
+
+## Boundaries
+
+- Empty array (`n <= 0`): loop body never executes, returns unchanged
+- Single element (`n == 1`): loop body executes once, no shift needed
+- Already sorted: inner while loop exits immediately, minimal operations
+- Reverse sorted: inner while runs full `i` iterations per outer step, worst case O(n²)
+- All equal elements: stable, no swaps beyond initial comparison
+
+## Examples
+
+```c
+// Basic usage
+int arr[] = {5, 2, 4, 6, 1, 3};
+insertion_sort(arr, 6);
+// Result: {1, 2, 3, 4, 5, 6}
+
+// Nearly sorted
+int arr2[] = {1, 2, 4, 3, 5};
+insertion_sort(arr2, 5);
+// Result: {1, 2, 3, 4, 5}
+
+// Empty array
+int arr3[] = {};
+insertion_sort(arr3, 0);
+// No-op, safe
+```
+
+## Prohibitions
+
+- Memory allocation functions: `malloc`, `calloc`, `realloc`, `free`
+
+---
+
+[code]
 // Insertion sort — O(n²), stable, efficient for small/nearly-sorted arrays
 void insertion_sort(int arr[], int n) {
     for (int i = 1; i < n; i++) {

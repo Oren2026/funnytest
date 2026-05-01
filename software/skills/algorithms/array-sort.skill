@@ -1,3 +1,43 @@
+## Contract
+`void bubble_sort(int arr[], int n)` — Sort `arr[0..n-1]` in ascending order using the bubble sort algorithm. Operates in-place, no dynamic memory allocation.
+
+**Preconditions:**
+- `arr` must be a valid pointer to an array of at least `n` integers
+- `n` must be non-negative
+
+**Postconditions:**
+- `arr[0..n-1]` is sorted in ascending order
+- No elements are lost or added
+
+## Dependencies
+- C compiler (any ISO C99+ environment)
+
+## Slots
+| Slot | Type | Description |
+|------|------|-------------|
+| `arr` | `int[]` | Input/output array to sort |
+| `n` | `int` | Number of elements in `arr` |
+
+## Boundaries
+- `n = 0`: No-op, returns immediately
+- `n = 1`: No-op, single element is trivially sorted
+- `n = 2`: One comparison, at most one swap
+- Large `n`: O(n²) time complexity, O(1) space complexity
+
+## Examples
+```
+Input:  arr = [5, 3, 8, 4, 2], n = 5
+Output: arr = [2, 3, 4, 5, 8]
+
+Input:  arr = [1, 1, 1, 1], n = 4
+Output: arr = [1, 1, 1, 1]  (no swaps needed)
+
+Input:  arr = [9, 1, 5, 9, 0], n = 5
+Output: arr = [0, 1, 5, 9, 9]
+```
+
+[code]
+```c
 // array-sort skill — O(n^2) bubble sort, no dynamic allocation
 void bubble_sort(int arr[], int n) {
     int i, j, temp;
@@ -11,3 +51,5 @@ void bubble_sort(int arr[], int n) {
         }
     }
 }
+```
+[/code]

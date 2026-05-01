@@ -2,6 +2,48 @@
 # depends: none
 # prohibit: none
 
+## Contract
+
+Provides common loop patterns with built-in interruptibility via `keep_running` flag. All loops check `keep_running` before each iteration to allow graceful shutdown.
+
+## Dependencies
+
+- `keep_running` (external global `int` or `bool`): Controls loop termination. Set to 0/false to stop loops.
+- Standard C library: `<unistd.h>` for `sleep()`
+
+## Slots
+
+| Slot | Type | Description |
+|------|------|-------------|
+| `LOOP_WHILE(cond)` | macro | Infinite loop that breaks when `cond` is false OR `keep_running` becomes false |
+| `periodic_tick(fn, interval)` | `void (*)(void), int` | Calls `fn()` every `interval` seconds until stopped |
+| `bounded_for(start, end, fn)` | `int, int, void (*)(int)` | Iterates from `start` to `end`, calling `fn(i)` each iteration |
+
+## Boundaries
+
+- `periodic_tick`: interval must be > 0; negative values cause undefined behavior
+- `bounded_for`: if `start > end`, function returns immediately without calling `fn`
+- All loops honor `keep_running` check before each iteration (not mid-iteration)
+
+## Examples
+
+```c
+// Example 1: Infinite loop with condition
+while (keep_running && buffer_has_data()) {
+    process_buffer();
+}
+
+// Example 2: Periodic task
+void report_status(void) { printf("Running\n"); }
+periodic_tick(report_status, 5);  // Prints "Running" every 5 seconds
+
+// Example 3: Bounded iteration
+void print_num(int n) { printf("%d\n", n); }
+bounded_for(1, 10, print_num);  // Prints 1 through 10
+```
+
+[code]
+```c
 // Common loop patterns
 
 // Infinite loop with interrupt check
@@ -22,3 +64,4 @@ void bounded_for(int start, int end, void (*fn)(int)) {
         fn(i);
     }
 }
+```

@@ -1,7 +1,61 @@
 # skill: quick_sort
-# depends: array-base,comparison,signal-handler,printf-basic
-# prohibit: none
 
+## Contract
+
+Sorts an integer array in ascending order using the QuickSort algorithm.
+
+**Signature:**
+```
+void quick_sort(int arr[], int low, int high)
+```
+
+**Parameters:**
+- `arr[]` — integer array to sort (modified in-place)
+- `low` — starting index (inclusive)
+- `high` — ending index (inclusive)
+
+**Behavior:**
+- Partitions array around a pivot (last element)
+- Recursively sorts left and right subarrays
+- Uses explicit stack-based recursion to stay within static memory bounds
+
+**Complexity:**
+- Average: O(n log n)
+- Worst: O(n²) when array is already sorted or reverse sorted
+- Space: O(log n) stack depth
+
+**Stability:** Not stable
+
+## Dependencies
+
+- `array-base` — array subscript and length conventions
+- `comparison` — `compare_gt(a, b)` predicate
+- `signal-handler` — error/signal conventions
+- `printf-basic` — debug output if needed
+
+## Slots
+
+| Slot | Type | Description |
+|------|------|-------------|
+| `pivot` | `int` | Chosen as `arr[high]` (last element) |
+| `i` | `int` | Partition boundary index |
+| `pi` | `int` | Final pivot index after partition |
+
+## Boundaries
+
+- `low >= high` — base case: subarray has 0 or 1 element, return immediately
+- Pivot selection is deterministic (last element) — vulnerable to worst-case O(n²) on sorted input
+- No bounds checking on `arr[]` — caller must ensure valid range
+
+## Examples
+
+```
+quick_sort(arr, 0, 4);  // sort arr[0..4]
+quick_sort(arr, 0, n-1); // sort entire array
+```
+
+[code]
+```c
 // Quick sort — O(n log n) average, O(n²) worst, not stable
 // Uses stack for explicit recursion to stay within static memory
 void quick_sort(int arr[], int low, int high) {
@@ -22,3 +76,4 @@ void quick_sort(int arr[], int low, int high) {
     quick_sort(arr, low, pi - 1);
     quick_sort(arr, pi + 1, high);
 }
+```

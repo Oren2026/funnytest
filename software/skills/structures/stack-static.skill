@@ -1,8 +1,67 @@
-# skill: stack-static
-# depends: array-base
-# prohibit: malloc,calloc,realloc,free
+## Contract
 
-// Static stack — array-based, fixed capacity
+Static array-based stack with fixed capacity (128 elements). No dynamic memory allocation. All operations return success/failure indicators.
+
+### Functions
+
+| Function | Parameters | Returns | Failure |
+|----------|------------|---------|---------|
+| `stack_init` | `struct StaticStack* s` | `void` | — |
+| `stack_push` | `struct StaticStack* s, int val` | `int` (1=success, 0=failure) | Stack overflow (top >= CAPACITY-1) |
+| `stack_pop` | `struct StaticStack* s, int* out` | `int` (1=success, 0=failure) | Stack underflow (top < 0) |
+| `stack_peek` | `struct StaticStack* s, int* out` | `int` (1=success, 0=failure) | Stack underflow (top < 0) |
+| `stack_is_empty` | `struct StaticStack* s` | `int` (1=empty, 0=non-empty) | — |
+
+### Struct
+
+```c
+struct StaticStack {
+    int data[STACK_CAPACITY];
+    int top;       // -1 when empty
+};
+```
+
+## Dependencies
+
+- `array-base` — base skill for array conventions
+
+## Prohibitions
+
+- `malloc`, `calloc`, `realloc`, `free` — no dynamic memory
+
+## Boundaries
+
+- Capacity: 128 elements (STACK_CAPACITY)
+- Index range: 0 to CAPACITY-1
+- top: -1 (empty) to CAPACITY-1 (full)
+
+## Examples
+
+```c
+struct StaticStack s;
+stack_init(&s);
+
+stack_push(&s, 10);   // 1
+stack_push(&s, 20);   // 1
+stack_push(&s, 30);   // 1
+
+int val;
+stack_peek(&s, &val); // 1, val=30
+stack_pop(&s, &val);  // 1, val=30
+stack_pop(&s, &val);  // 1, val=20
+stack_pop(&s, &val);  // 1, val=10
+stack_pop(&s, &val);  // 0 (underflow)
+stack_is_empty(&s);   // 1
+```
+
+```c
+// Full stack
+for (int i = 0; i < 128; i++) stack_push(&s, i);  // 1
+stack_push(&s, 999);                              // 0 (overflow)
+```
+
+[code]
+```c
 #define STACK_CAPACITY 128
 
 struct StaticStack {
@@ -35,3 +94,5 @@ int stack_peek(struct StaticStack* s, int* out) {
 int stack_is_empty(struct StaticStack* s) {
     return s->top < 0;
 }
+```
+[/code]

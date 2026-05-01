@@ -1,3 +1,54 @@
+## Contract
+
+- **語義承諾**: Safe malloc wrapper that checks for allocation failure and exits on NULL
+- **輸入資料格式**: `size_t size` — number of bytes to allocate
+- **輸出語義**: Valid `void*` pointer on success; on failure prints ERROR and calls `exit(1)`
+- **操作邊界**:
+  - ✅ 做：allocate with `malloc`, check result for NULL, exit with error message on failure
+  - ❌ 不做：free memory (caller's responsibility), handle `realloc`/`calloc`, recover from allocation failure
+- **失敗信號**: `malloc` returns NULL → `printf("ERROR: malloc failed\n")` then `exit(1)`
+
+## Dependencies
+
+- None (standalone utility)
+
+## Slots
+
+None — this is a stateless function utility with no slot injection points.
+
+## Boundaries
+
+- **系統邊界**: Data Layer — pure memory allocation helper, no business logic
+- **操作邊界**:
+  - ✅ 操作：`malloc`, `printf`, `exit`
+  - ❌ 不操作：`free` (caller owns deallocation), `realloc`, `calloc`, any I/O beyond error message
+- **狀態邊界**: Stateless — no internal state, deterministic per call
+
+## Examples
+
+### Basic allocation
+
+```c
+void* buf = safe_malloc(256);
+```
+
+### Struct allocation
+
+```c
+struct MyStruct* s = safe_malloc(sizeof(struct MyStruct));
+```
+
+### Allocation failure behavior
+
+```c
+// If malloc fails internally:
+//   printf("ERROR: malloc failed\n");
+//   exit(1);
+```
+
+---
+
+```c
 // dynamic-allocation skill — uses malloc/calloc
 // WARNING: conflicts with static_memory constraint
 void* safe_malloc(size_t size) {
@@ -8,3 +59,4 @@ void* safe_malloc(size_t size) {
     }
     return ptr;
 }
+```

@@ -1,7 +1,61 @@
 # skill: daemon-loop
-# depends: signal-handler,loop-pattern
-# prohibit: none
 
+## Contract
+- **語義承諾**：重複執行 tick 函式，直到 `keep_running` 被信號處理器設為 false
+- **輸入資料格式**：`void (*tick)(void)` — 一個無參數、無回傳值的函式指標
+- **輸出語義**：無（void），正常結束時不回傳值
+- **操作邊界**：
+  - ✅ 做：while 迴圈檢查 `keep_running`，每輪呼叫 `tick()`
+  - ❌ 不做：管理信號、創建執行緒、處理 `tick()` 內部錯誤
+- **失敗信號**：
+  - `keep_running` 變為 false → 正常結束
+  - `tick()` 拋出例外交叉至 caller
+
+## Dependencies
+- **依賴**：`signal-handler`（提供全域 `keep_running` 變數與 `sig_handler`）
+- **可選依賴**：無
+- **排斥**：無
+
+## Slots
+- **無** — 此 skill 為純函式，不使用 slot injection 機制
+
+## Boundaries
+- **系統邊界**：Business Logic Layer（流程控制，不涉及 UI 或資料持久化）
+- **操作邊界**：
+  - ✅ 操作：重複呼叫 tick()、檢查 keep_running 狀態
+  - ❌ 不操作：信號註冊執行緒管理、tick() 內部錯誤處理
+- **狀態邊界**：Stateful（依賴外部全域 `keep_running` 狀態，非純函式）
+
+## Examples
+
+### 基本用法
+```c
+void my_tick(void) {
+    printf("tick\n");
+}
+
+// 假設 signal-handler skill 已初始化
+signal(SIGTERM, sig_handler);
+signal(SIGINT, sig_handler);
+
+daemon_loop_body(my_tick);
+// 持續執行直到收到 SIGTERM 或 SIGINT
+```
+
+### 典型初始化順序
+```c
+// 1. 安裝信號處理器（由 signal-handler skill 提供）
+signal(SIGTERM, sig_handler);
+signal(SIGINT, sig_handler);
+
+// 2. 啟動 daemon loop
+daemon_loop_body(my_tick);
+
+// 3. 收到信號後，keep_running 被設為 false，迴圈結束
+```
+
+[code]
+```c
 // Daemon loop — runs until signal received
 // Depends on signal-handler skill which provides keep_running and sig_handler
 
@@ -10,3 +64,4 @@ void daemon_loop_body(void (*tick)(void)) {
         tick();
     }
 }
+```

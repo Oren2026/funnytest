@@ -1,7 +1,27 @@
-# skill: signal-handler
-# depends: none
-# prohibit: malloc,calloc,realloc,free
+## Contract
 
+Signal handler for graceful shutdown on SIGTERM/SIGINT. Sets `keep_running = 0` to signal the main loop to exit cleanly.
+
+## Dependencies
+
+None
+
+## Slots
+
+| Slot | Type | Description |
+|------|------|-------------|
+| `keep_running` | `volatile sig_atomic_t` | Atomic flag checked by main loop to determine shutdown |
+| `sig_handler(int sig)` | function | Signal callback — sets `keep_running = 0` |
+| `signal_setup(void)` | function | Registers `sig_handler` for SIGTERM and SIGINT |
+
+## Boundaries
+
+- **Prohibited**: `malloc`, `calloc`, `realloc`, `free` — signal handlers must not allocate memory
+- Signal handlers must be async-signal-safe; only use async-signal-safe functions
+
+## Examples
+
+```c
 // Signal handler — graceful shutdown for SIGTERM/SIGINT
 volatile sig_atomic_t keep_running = 1;
 
@@ -13,3 +33,4 @@ void signal_setup(void) {
     signal(SIGTERM, sig_handler);
     signal(SIGINT, sig_handler);
 }
+```

@@ -1,10 +1,52 @@
 # skill: queue-static
-# depends: linked-list-static
-# prohibit: none
 
-// Static queue — built on linked-list-static
-// Uses the linked-list node allocator, no dynamic memory
+## Contract
 
+Static queue backed by a static linked list allocator. Provides FIFO operations with no dynamic memory allocation. All nodes are pre-allocated from a fixed pool.
+
+**Struct:**
+- `StaticQueue` — wraps `StaticLinkedList`
+
+**Functions:**
+- `queue_init(q)` — initializes an empty queue
+- `queue_enqueue(q, val)` — appends `val` to the rear; O(n) traversal, no heap allocation
+- `queue_dequeue(q)` — removes and returns front element; returns underlying list value
+- `queue_is_empty(q)` — returns true if queue has zero elements
+
+**Behavior:**
+- `queue_dequeue` on empty queue delegates to `ll_pop_front` (see linked-list-static contract)
+- `queue_enqueue` allocates from the static node pool; silently fails if pool is exhausted
+
+## Dependencies
+
+- `linked-list-static` — must be loaded first; `StaticLinkedList`, `ll_init`, `ll_push_front`, `ll_pop_front`, `ll_alloc_node`, `LL_NULL`
+
+## Slots
+
+- `LL_NODEPOOL_SIZE` — inherited from `linked-list-static`; determines max queue capacity
+
+## Boundaries
+
+| Condition | Behavior |
+|-----------|----------|
+| `queue_dequeue` on empty | Delegates to `ll_pop_front` |
+| `queue_enqueue` when pool full | Silently returns; no allocation |
+| Queue at capacity | Same as pool exhaustion |
+
+## Examples
+
+```c
+struct StaticQueue q;
+queue_init(&q);
+queue_enqueue(&q, 10);
+queue_enqueue(&q, 20);
+queue_dequeue(&q);  // returns 10
+queue_is_empty(&q); // false
+```
+
+## Code
+
+```c
 struct StaticQueue {
     struct StaticLinkedList list;
 };
@@ -14,7 +56,6 @@ void queue_init(struct StaticQueue* q) {
 }
 
 void queue_enqueue(struct StaticQueue* q, int val) {
-    // Traverse to end — O(n) but no dynamic allocation
     if (q->list.size == 0) {
         ll_push_front(&q->list, val);
         return;
@@ -37,3 +78,4 @@ int queue_dequeue(struct StaticQueue* q) {
 int queue_is_empty(struct StaticQueue* q) {
     return q->list.size == 0;
 }
+```

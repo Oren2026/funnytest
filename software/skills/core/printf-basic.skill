@@ -1,7 +1,30 @@
-# skill: printf-basic
-# depends: none
-# prohibit: none
+## Contract
+Provides basic printf utility functions for integer output, formatting, and array printing.
 
+## Dependencies
+none
+
+## Slots
+- `print_int(int val)` — prints an integer value
+- `print_newline(void)` — prints a newline character
+- `print_space(void)` — prints a single space character
+- `print_array(int arr[], int n)` — prints an integer array with space-separated values
+
+## Boundaries
+- Single-file C implementation
+- No dynamic memory allocation
+- Array printing assumes valid pointer and count
+
+## Examples
+```
+print_int(42);        // outputs: 42
+print_newline();      // outputs: \n
+print_space();        // outputs: (space)
+print_array([1,2,3], 3); // outputs: 1 2 3
+```
+
+[code]
+```c
 // Basic printf utilities
 
 void print_int(int val) {
@@ -22,3 +45,5 @@ void print_array(int arr[], int n) {
         if (i < n - 1) printf(" ");
     }
 }
+```
+[/code]

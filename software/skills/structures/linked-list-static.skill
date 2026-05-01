@@ -1,9 +1,99 @@
 # skill: linked-list-static
-# depends: array-base,memory-static
-# prohibit: malloc,calloc,realloc,free
 
-// Static linked-list — array-based, no pointers
-// Max 64 nodes, node index 0 is reserved as NULL
+## Contract
+
+Static linked-list — array-based, no pointers.
+- Max 64 nodes, node index 0 is reserved as NULL sentinel.
+- All nodes allocated from a pre-sized array; no dynamic memory.
+
+### Structures
+
+```
+struct LLNode {
+    int data;
+    int next;   // index of next node, 0 = NULL
+};
+
+struct StaticLinkedList {
+    struct LLNode nodes[64];
+    int free_head;  // index of first free node
+    int size;       // active node count
+};
+```
+
+### Functions
+
+| Function | Signature | Description |
+|---|---|---|
+| `ll_init` | `void ll_init(struct StaticLinkedList* list)` | Initialize list, build free list |
+| `ll_alloc_node` | `int ll_alloc_node(struct StaticLinkedList* list)` | Allocate from free list; returns index or 0 |
+| `ll_free_node` | `void ll_free_node(struct StaticLinkedList* list, int idx)` | Return node to free list |
+| `ll_push_front` | `void ll_push_front(struct StaticLinkedList* list, int data)` | Insert data at head |
+| `ll_pop_front` | `int ll_pop_front(struct StaticLinkedList* list)` | Remove and return head data |
+
+### Constants
+
+- `LL_MAX_NODES = 64`
+- `LL_NULL = 0` (sentinel, node index 0 is never used for data)
+
+## Dependencies
+
+- `array-base` — generic array utilities
+- `memory-static` — no-heap memory discipline
+
+## Prohibitions
+
+`malloc`, `calloc`, `realloc`, `free` — this skill enforces static allocation only.
+
+## Slots
+
+| Slot | Type | Description |
+|---|---|---|
+| `ll_init` | init | Initialize `StaticLinkedList` |
+| `ll_alloc_node` | factory | Produce a node index from free list |
+| `ll_free_node` | destructor | Return a node to free list |
+| `ll_push_front` | mutator | Add node to list head |
+| `ll_pop_front` | accessor | Remove and yield head value |
+
+## Boundaries
+
+- **Capacity**: 63 usable nodes (index 0 reserved)
+- **Empty state**: `size == 0`, `nodes[0].next == LL_NULL`
+- **Full state**: `free_head == LL_NULL`
+- **No overflow check** in `ll_push_front` — caller must check `size < LL_MAX_NODES - 1`
+- **No underflow check** in `ll_pop_front` — returns `0` on empty list (ambiguous with valid data `0`)
+- **Thread safety**: None — caller must serialize access
+
+## Examples
+
+### Init
+
+```c
+struct StaticLinkedList list;
+ll_init(&list);
+// free_head = 1, size = 0, all nodes chained 1->2->...->63->NULL
+```
+
+### Push/Pop
+
+```c
+ll_push_front(&list, 42);
+ll_push_front(&list, 99);
+ll_pop_front(&list);  // returns 99
+ll_pop_front(&list);  // returns 42
+ll_pop_front(&list);  // returns 0 (empty)
+```
+
+### Full list
+
+```c
+// fill to capacity
+for (int i = 0; i < 63; i++) ll_push_front(&list, i);
+// free_head == LL_NULL, next push silently no-ops
+```
+
+[code]
+```c
 #define LL_MAX_NODES 64
 #define LL_NULL 0
 
@@ -58,3 +148,4 @@ int ll_pop_front(struct StaticLinkedList* list) {
     ll_free_node(list, first);
     return data;
 }
+```

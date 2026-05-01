@@ -2,9 +2,41 @@
 # depends: signal-handler,loop-pattern
 # prohibit: none
 
-// Periodic timer — executes task at fixed interval
-// Uses signal-handler for clean shutdown
+## Contract
+Provides a periodic timer that executes a callback task at fixed intervals.
+- **Semantics**: Timer fires every `interval_sec` seconds using `ITIMER_REAL` (real-time clock).
+- **Input**: `PeriodicTimer` struct with `interval_sec` and `task` function pointer.
+- **Output**: Task is invoked repeatedly until it returns 0.
+- **Failure signal**: If `setitimer` fails, behavior is undefined (caller should check errno).
 
+## Dependencies
+- `signal-handler` — required for clean shutdown handling
+- `loop-pattern` — required for understanding iteration/repeat semantics
+
+## Slots
+- **Provided**: `periodic_timer` (timer instance)
+- **Consumed**: `task_callback` (int (*task)(void))
+
+## Boundaries
+- System boundary: kernel `setitimer` syscall with `ITIMER_REAL`
+- State boundary: timer runs independently once started; caller must manage lifecycle
+
+## Examples
+```c
+int my_task(void) {
+    printf("tick\n");
+    return 1; // keep running
+}
+
+struct PeriodicTimer t = {
+    .interval_sec = 5,
+    .task = my_task
+};
+timer_run(&t);
+```
+
+[code]
+```c
 #include <sys/time.h>
 
 struct PeriodicTimer {
@@ -20,3 +52,4 @@ void timer_run(struct PeriodicTimer* t) {
     itv.it_value.tv_usec = 0;
     setitimer(ITIMER_REAL, &itv, NULL);
 }
+```
