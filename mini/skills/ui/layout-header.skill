@@ -1,0 +1,88 @@
+# skill: layout-header
+
+## Contract
+- **語義承諾**：渲染頁面頂部 header，包含標題與操作按鈕區（actions slot）
+- **輸入資料格式**：
+  - `children`：操作按鈕區（slot:actions 注入的按鈕 HTML）
+- **輸出語義**：HTML `<header>` 元素，包含固定標題「📦 倉儲管理系統」與操作按鈕區
+- **操作邊界**：
+  - ✅ 做：渲染標題、容納 actions slot
+  - ❌ 不做：管理按鈕邏輯、處理點擊事件、管理狀態
+
+## Dependencies
+- **依賴**：無
+- **可選依賴**：無
+- **排斥**：無
+
+## Slots
+- **slot:header**：整個 header 區（Composer calls this as "header" slot）
+- **slot:actions**：操作按鈕區，由 Composer 注入（新增、刪除等按鈕）
+
+## Boundaries
+- **系統邊界**：Presentation Layer
+- **操作邊界**：
+  - ✅ 操作：DOM 渲染、容納 slot 內容
+  - ❌ 不操作：狀態管理、商業邏輯
+- **狀態邊界**：Stateless
+
+## Examples
+
+### 基本輸出
+```html
+<header class="warehouse-header">
+  <div class="header-left">
+    <span class="header-title">📦 倉儲管理系統</span>
+  </div>
+  <div class="header-actions">
+    <!-- slot:actions -->
+  </div>
+</header>
+```
+
+### Actions 注入後
+**輸入**：`<!-- slot:actions -->` 被置換為 `<button class="btn-primary">+ 新增</button>`
+**輸出**：
+```html
+<header class="warehouse-header">
+  <div class="header-left">
+    <span class="header-title">📦 倉儲管理系統</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn-primary">+ 新增</button>
+  </div>
+</header>
+```
+
+[html]
+<header class="warehouse-header">
+  <div class="header-left">
+    <span class="header-title">📦 倉儲管理系統</span>
+  </div>
+  <div class="header-actions" data-slot="actions">
+  </div>
+</header>
+
+[react]
+const Header = ({ children }) => (
+  <header className="warehouse-header">
+    <div className="header-left">
+      <span className="header-title">📦 倉儲管理系統</span>
+    </div>
+    <div className="header-actions">
+      {children}
+    </div>
+  </header>
+);
+
+[style]
+.warehouse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #1a1a2e;
+  color: #fff;
+  border-bottom: 1px solid #16213e;
+}
+.header-title { font-size: 20px; font-weight: 600; }
+.header-actions { display: flex; gap: 8px; }

@@ -1,0 +1,74 @@
+# skill: badge-status
+
+## Contract
+- **語義承諾**：渲染庫存狀態標籤，用於顯示「正常」「庫存不足」「缺貨」三種狀態
+- **輸入資料格式**：
+  - `type`: `ok` | `warning` | `danger`（必填，決定標籤顏色）
+  - `children`: 任意文字內容（作為標籤顯示文字）
+- **輸出語義**：React 元件 `<Badge type="...">...</Badge>`，渲染為 `<span class="badge badge-{type}">{children}</span>`
+- **操作邊界**：
+  - ✅ 做：根據 `type` 動態套用視覺樣式、接收並渲染任意 children 文字
+  - ❌ 不做：不處理點擊事件、不管理任何業務邏輯
+- **失敗信號**：
+  - `type` 未提供 → 使用 `ok` 作為預設值
+  - `type` 非有效枚舉值 → 使用 `ok` 作為預設值
+
+## Dependencies
+- **依賴**：無
+- **可選依賴**：無
+- **排斥**：無
+
+## Slots
+- **slot:children**：接收顯示文字內容，由父元件注入
+
+## Boundaries
+- **系統邊界**：Presentation Layer（只處理 UI 渲染，不涉及資料邏輯）
+- **操作邊界**：
+  - ✅ 操作：DOM 渲染、套用 CSS 樣式、動態切換 badge-{type} class
+  - ❌ 不操作：localStorage、網路請求、函式級變數
+- **狀態邊界**：Stateless（不保有內部狀態，純粹渲染元件）
+
+## Examples
+
+### 基本用法
+**輸入**：
+```jsx
+<Badge type="ok">正常</Badge>
+```
+**輸出**：
+```html
+<span class="badge badge-ok">正常</span>
+```
+
+### 庫存不足
+**輸入**：
+```jsx
+<Badge type="warning">庫存不足</Badge>
+```
+**輸出**：
+```html
+<span class="badge badge-warning">庫存不足</span>
+```
+
+### 缺貨
+**輸入**：
+```jsx
+<Badge type="danger">缺貨</Badge>
+```
+**輸出**：
+```html
+<span class="badge badge-danger">缺貨</span>
+```
+
+### 樣式定義（CSS）
+```css
+.badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.badge-ok { background: #d1fae5; color: #059669; }
+.badge-warning { background: #fef3c7; color: #d97706; }
+.badge-danger { background: #fee2e2; color: #dc2626; }
+```

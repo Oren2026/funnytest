@@ -1,0 +1,92 @@
+# skill: confirm-dialog
+
+## Contract
+- **語義承諾**：渲染一個阻塞式確認對話框，等待使用者確認或取消危險操作
+- **輸入資料格式**：
+  ```json
+  {
+    "isOpen": "boolean - 對話框可見性",
+    "title": "string - 對話框標題",
+    "message": "string - 確認說明文字",
+    "confirmLabel": "string - 確認按鈕文字（預設：刪除）",
+    "onConfirm": "function - 確認回調",
+    "onCancel": "function - 取消回調"
+  }
+  ```
+- **輸出語義**：對話框 overlay + panel，點擊確定觸發 `onConfirm`，點擊取消或遮罩層觸發 `onCancel`
+- **操作邊界**：
+  - ✅ 做：顯示 Modal overlay、阻止點擊遮罩層關閉（需明確點取消）、支援自訂標題/訊息/按鈕文字
+  - ❌ 不做：自動關閉（需手動调用 onCancel）、管理任何狀態（stateless）
+- **失敗信號**：
+  - `isOpen` 不是 boolean → 視為 false
+  - `onConfirm` / `onCancel` 未提供 → 靜默忽略點擊
+
+## Dependencies
+- **依賴**：`button-danger`（確認按鈕樣式）、`button-primary`（取消按鈕樣式）
+- **可選依賴**：無
+- **排斥**：無
+
+## Slots
+- **slot:confirm**：確認弹窗本體（Composer calls this as "confirm" slot）
+- **slot:overlay**：覆蓋層，全域點擊觸發 onCancel
+- **slot:panel**：對話框主體，停止事件冒泡
+- **slot:icon**：警告圖示（預設 ⚠️）
+- **slot:title**：對話框標題
+- **slot:message**：說明文字
+- **slot:actions**：操作按鈕區（取消 + 確認）
+
+## Boundaries
+- **系統邊界**：Presentation Layer（只處理 UI 渲染，不管資料邏輯）
+- **操作邊界**：
+  - ✅ 操作：DOM 渲染、使用者互動（點擊確認/取消）、overlay 點擊關閉
+  - ❌ 不操作：localStorage、網路請求、內部狀態、計時器
+- **狀態邊界**：Stateless（dialog 可見性由 parent 控制，skill 只根據 props 渲染）
+
+## Examples
+
+### 基本用法（HTML 版本）
+**輸入**：`isOpen=true, title=確認刪除？, message=此操作無法撤銷`
+**輸出**：
+```html
+<div class="modal-overlay">
+  <div class="confirm-panel">
+    <div class="confirm-icon">⚠️</div>
+    <h3>確認刪除？</h3>
+    <p>此操作無法撤銷</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">取消</button>
+      <button class="btn-danger">刪除</button>
+    </div>
+  </div>
+</div>
+```
+
+### React 版本
+**語法**：
+```jsx
+<ConfirmDialog
+  isOpen={showConfirm}
+  title="確認刪除？"
+  message="此操作無法撤銷"
+  confirmLabel="刪除"
+  onConfirm={handleDelete}
+  onCancel={() => setShowConfirm(false)}
+/>
+```
+
+### 樣式定義
+```css
+.confirm-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  width: 360px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.confirm-icon { font-size: 40px; margin-bottom: 16px; }
+.confirm-panel h3 { margin: 0 0 8px; font-size: 18px; color: #1e293b; }
+.confirm-panel p { margin: 0 0 24px; color: #64748b; font-size: 14px; }
+.confirm-actions { display: flex; gap: 8px; justify-content: center; }
+```

@@ -1,0 +1,138 @@
+# skill: toast-notify
+
+## Contract
+- **語義承諾**：在畫面右下角顯示短暫通知訊息（toast），3 秒後自動消失
+- **輸入資料格式**：
+  ```json
+  {
+    "message": "string",   // 通知內容文字
+    "type": "string"       // 類型：success | error | warning
+  }
+  ```
+- **輸出語義**：在 `toast-container` 區塊新增一個 toast 元素，自動帶動畫效果並在 3 秒後移除
+- **操作邊界**：
+  - ✅ 做：根據 type 套用對應顏色主題（成功=綠、錯誤=紅、警告=橙）、自動移除
+  - ❌ 不做：持久化通知、不支援自訂時長、不處理點擊事件
+- **失敗信號**：
+  - `message` 為空 → 不渲染 toast
+  - `type` 非有效值 → 預設為無樣式 toast
+
+## Dependencies
+- **依賴**：無
+- **可選依賴**：無
+- **排斥**：無
+
+## Slots
+- **slot:toast-container**：toast 訊息的容器，固定於右下角，由 skill 自身管理
+
+## Boundaries
+- **系統邊界**：Presentation Layer（只處理 UI 渲染通知）
+- **操作邊界**：
+  - ✅ 操作：DOM 插入/移除 toast 元素、apply CSS 樣式與動畫
+  - ❌ 不操作：localStorage、網路請求、計時器外的狀態
+- **狀態邊界**：Stateless（每次呼叫獨立，無跨呼叫狀態）
+
+## Examples
+
+### 基本用法（HTML 直接呼叫）
+**呼叫**：
+```javascript
+showToast('操作成功', 'success');
+showToast('發生錯誤', 'error');
+showToast('請注意', 'warning');
+```
+**輸出**：
+```html
+<div class="toast toast-success">操作成功</div>
+<div class="toast toast-error">發生錯誤</div>
+<div class="toast toast-warning">請注意</div>
+```
+
+### React Context 用法
+**包裝**：
+```jsx
+<ToastProvider>
+  {children}
+</ToastProvider>
+```
+**呼叫**：
+```jsx
+const toast = useToast();
+toast('庫存已更新', 'success');
+```
+**輸出**：在畫面右下角顯示綠色 toast，3 秒後消失
+
+### 空訊息
+**呼叫**：`showToast('', 'success')`
+**輸出**：無 toast 渲染（失敗信號觸發）
+
+### 無效類型
+**呼叫**：`showToast('hello', 'invalid')`
+**輸出**：`<div class="toast">hello</div>`（使用預設無樣式）
+
+---
+
+## 附：原始實作（供參考）
+
+### HTML
+```html
+<div id="toast-container"></div>
+<script>
+function showToast(message, type) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast toast-' + type;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+</script>
+```
+
+### React
+```jsx
+const ToastContext = React.createContext();
+const ToastProvider = ({ children }) => {
+  const [toasts, setToasts] = React.useState([]);
+  const addToast = (message, type) => {
+    const id = Date.now();
+    setToasts(t => [...t, { id, message, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
+  };
+  return (
+    <ToastContext.Provider value={addToast}>
+      {children}
+      <div className="toast-container">
+        {toasts.map(t => (
+          <div key={t.id} className={`toast toast-${t.type}`}>{t.message}</div>
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+};
+const useToast = () => React.useContext(ToastContext);
+```
+
+### CSS
+```css
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px;
+  display: flex; flex-direction: column; gap: 8px;
+  z-index: 9999;
+}
+.toast {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: toastIn 0.2s ease;
+}
+.toast-success { background: #059669; color: #fff; }
+.toast-error { background: #dc2626; color: #fff; }
+.toast-warning { background: #d97706; color: #fff; }
+@keyframes toastIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+```

@@ -1,0 +1,30 @@
+# skill: button-danger
+# depends: none
+# prohibit: none
+
+[html]
+<button class="btn-danger" onclick="">{label}</button>
+
+[react]
+const ButtonDanger = ({ label, onClick }) => (
+  <button className="btn-danger" onClick={onClick}>
+    {label}
+  </button>
+);
+
+[style]
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+  background: #fff;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-danger:hover { background: #fef2f2; border-color: #f87171; }

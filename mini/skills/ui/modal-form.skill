@@ -1,0 +1,190 @@
+# skill: modal-form
+
+## Contract
+- **語義承諾**：提供一個表單弹窗，用於新增/編輯資料，支援必填驗證與取消/儲存操作
+- **輸入資料格式**：
+  ```json
+  {
+    "isOpen": "boolean - 彈窗是否開啟",
+    "mode": "string - 'add' | 'edit'",
+    "initial": "object - 初始表單值 { name, category, quantity, minStock, note }",
+    "onSave": "function - 儲存表單時的回調，接收 form 物件",
+    "onClose": "function - 關閉彈窗時的回調"
+  }
+  ```
+- **輸出語義**：渲染表單彈窗 DOM，包含 header（標題+關閉按鈕）、表單內容（slot:form-fields）、操作按鈕（取消/儲存）
+- **操作邊界**：
+  - ✅ 做：根據 mode 切換標題（新增項目/編輯項目）、觸發 onSave 回調、表單驗證（必填欄位）
+  - ❌ 不做：資料持久化、API 呼叫、商業邏輯
+- **失敗信號**：
+  - `isOpen=false` 時不渲染任何 DOM（return null）
+  - 必填欄位（name, category, quantity）留空時 HTML5 原生驗證阻止提交
+
+## Dependencies
+- **依賴**：`button-primary`（儲存按鈕使用 btn-primary class）
+- **可選依賴**：`button-danger`（刪除確認）
+- **排斥**：無
+
+## Slots
+- **slot:modal**：表單弹窗本體（Composer calls this as "modal" slot）
+- **slot:form-fields**：表單欄位區域，由 Composer 根據 Schema 動態注入 input/select/textarea
+  - 預設行為：若無注入，顯示標籤為「名稱 *」「分類 *」「數量 *」「安全存量」的四欄位表單
+  - Composer 注入時替換 `<!-- slot:form-fields -->` 為動態欄位
+
+## Boundaries
+- **系統邊界**：Presentation Layer（僅處理 UI 渲染與使用者互動）
+- **操作邊界**：
+  - ✅ 操作：DOM 渲染、表單輸入綁定、submit 事件攔截
+  - ❌ 不操作：localStorage、網路請求、資料庫寫入
+- **狀態邊界**：Stateful（內部保有 form 狀態，使用 useState 管理）
+
+## Examples
+
+### 基本用法（React）
+**props輸入**：
+```json
+{
+  "isOpen": true,
+  "mode": "add",
+  "initial": { "name": "", "category": "", "quantity": 0, "minStock": 10, "note": "" },
+  "onSave": "(form) => console.log(form)",
+  "onClose": "() => setModalOpen(false)"
+}
+```
+**輸出**：
+```html
+<div class="modal-overlay">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h3>新增項目</h3>
+      <button class="modal-close">×</button>
+    </div>
+    <form class="modal-form">
+      <div class="form-group">
+        <label>名稱 *</label>
+        <input type="text" required placeholder="例如：螺絲 M3" />
+      </div>
+      <!-- 其餘欄位... -->
+      <div class="form-actions">
+        <button type="button" class="btn-cancel">取消</button>
+        <button type="submit" class="btn-primary">儲存</button>
+      </div>
+    </form>
+  </div>
+</div>
+```
+
+### 編輯模式
+**觸發**：`mode="edit"`, `initial={ name: "螺絲 M3", category: "工具", quantity: 100, ... }`
+**行為**：標題切換為「編輯項目」，表單預填初始值
+
+### Slot 注入（Composer 動態欄位）
+**輸入**：`slot:form-fields` 注入 `{ name: "庫存名稱", label: "名稱", type: "text" }` 等欄位定義
+**輸出**：`<!-- slot:form-fields -->` 被置換為對應的 input/select 元件
+
+### 關閉行為
+**觸發**：點擊 overlay 背景、點擊 × 按鈕、點擊取消按鈕
+**行為**：呼叫 `onClose()`，由父組件將 `isOpen` 設為 false
+
+[html]
+<div id="form-modal" class="modal-overlay" data-slot="modal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h3 id="modal-title">新增項目</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <form id="inventory-form" class="modal-form"><!-- slot:form-fields --></form>
+  </div>
+</div>
+
+[react]
+const ModalForm = ({ isOpen, mode, initial, onSave, onClose }) => {
+  const [form, setForm] = React.useState(initial || { name: '', category: '', quantity: 0, minStock: 10, note: '' });
+  if (!isOpen) return null;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-panel" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{mode === 'add' ? '新增項目' : '編輯項目'}</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <form className="modal-form" onSubmit={e => { e.preventDefault(); onSave(form); }}>
+          <div className="form-group">
+            <label>名稱 *</label>
+            <input type="text" required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="例如：螺絲 M3" />
+          </div>
+          <div className="form-group">
+            <label>分類 *</label>
+            <select required value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+              <option value="">請選擇</option>
+              <option value="電子元件">電子元件</option>
+              <option value="工具">工具</option>
+              <option value="原料">原料</option>
+              <option value="包裝">包裝</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>數量 *</label>
+            <input type="number" required min="0" value={form.quantity} onChange={e => setForm({...form, quantity: +e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label>安全存量</label>
+            <input type="number" min="0" value={form.minStock} onChange={e => setForm({...form, minStock: +e.target.value})} />
+          </div>
+          <div className="form-actions">
+            <button type="button" className="btn-cancel" onClick={onClose}>取消</button>
+            <button type="submit" className="btn-primary">儲存</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+[style]
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none; align-items: center; justify-content: center;
+  z-index: 1000;
+}
+.modal-overlay[data-active="true"] { display: flex; }
+.modal-panel {
+  background: #fff;
+  border-radius: 12px;
+  width: 480px;
+  max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.modal-header h3 { margin: 0; font-size: 18px; color: #1e293b; }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 6px;
+  border: none; background: transparent; font-size: 20px;
+  cursor: pointer; color: #94a3b8;
+}
+.modal-close:hover { background: #f1f5f9; color: #475569; }
+.modal-form { padding: 24px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #374151; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid #d1d5db; border-radius: 6px;
+  font-size: 14px; box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none; border-color: #3b82f6;
+}
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px; }
+.btn-cancel {
+  padding: 8px 16px; border-radius: 6px;
+  border: 1px solid #d1d5db; background: #fff;
+  font-size: 14px; cursor: pointer;
+}
+.btn-cancel:hover { background: #f9fafb; }
