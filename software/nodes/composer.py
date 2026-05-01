@@ -8,6 +8,18 @@ from dataclasses import dataclass, field
 
 SKILLS_BASE = Path(__file__).parent.parent / "skills"
 
+# Hardcoded fallback: slot_name → default skill name (backward compat only).
+# Future: remove once all skills have proper Spec declarations.
+SLOT_FALLBACK_MAP = {
+    "header":   "layout-header",
+    "search":   "search-bar",
+    "content":  "table-data",
+    "modal":    "modal-form",
+    "confirm":  "confirm-dialog",
+    "toast":    "toast-notify",
+}
+slot_map = list(SLOT_FALLBACK_MAP.items())  # kept for dict() conversion compat
+
 
 @dataclass
 class SkillSpec:
@@ -426,40 +438,35 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
             else:
                 all_css.append(css)
 
-    # --- Spec-aware slot → skill resolution ---
-    # Each (slot_name, fallback_skill_name) pair:
-    # 1. Try registry.find_skill_for_slot(slot_name)
-    # 2. Fall back to fallback_skill_name if not found or not Spec-formatted
-    slot_map = [
-        ("header",   "layout-header"),
-        ("search",   "search-bar"),
-        ("content",  "table-data"),
-        ("modal",    "modal-form"),
-        ("confirm",  "confirm-dialog"),
-        ("toast",    "toast-notify"),
-    ]
+    # --- Dynamic slot resolution from layout-page HTML ---
+    # Extract data-slot attributes from layout-page to get the authoritative slot list.
+    # For each slot, try registry.find_skill_for_slot() first, then fall back to slot_map.
+    _page_layout_raw = load_skill_blocks("layout-page", "html")
+    if _page_layout_raw:
+        page_slots = re.findall(r'data-slot=["\'](\w+)["\']', _page_layout_raw)
+    else:
+        page_slots = []
+
+    # Build fallback map for backward compatibility (slots not in any Spec)
+    fallback_map = SLOT_FALLBACK_MAP
 
     loaded_slots = {}
-    for slot_name, fallback_skill in slot_map:
+    for slot_name in page_slots:
         skill_name = registry.find_skill_for_slot(slot_name)
         if skill_name is None:
-            # No Spec declaration → use fallback (with warning)
-            skill_name = fallback_skill
-            if profile and profile.context:
+            # Not in registry → use hardcoded fallback (backward compat)
+            skill_name = fallback_map.get(slot_name)
+            if skill_name and profile and profile.context:
                 warnings.append(f"[Spec-aware] slot '{slot_name}': no Spec declaration found, falling back to '{skill_name}'")
-        else:
-            if skill_name != fallback_skill:
-                warnings.append(f"[Spec-aware] slot '{slot_name}': resolved to '{skill_name}' (Spec override)")
-        html = load_skill_blocks(skill_name, "html")
-        loaded_slots[slot_name] = html
+        loaded_slots[slot_name] = load_skill_blocks(skill_name, "html") if skill_name else ""
 
+    # Unpack loaded slots for the rest of the function
     header_html   = loaded_slots.get("header",   "")
     search_html   = loaded_slots.get("search",   "")
-    table_html    = loaded_slots.get("content", "")
+    table_html    = loaded_slots.get("content",  "")
     modal_html    = loaded_slots.get("modal",    "")
     confirm_html  = loaded_slots.get("confirm",  "")
     toast_html    = loaded_slots.get("toast",    "")
-    page_layout   = load_skill_blocks("layout-page", "html")
 
     # --- Schema-driven content generation ---
     form_html, open_add_js, open_edit_js, submit_data_js = _build_form_from_schema(schema)
@@ -480,7 +487,7 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
     table_with_schema = _inject_slot(table_with_schema, "thead", thead_html)
 
     # --- Inject into layout-page slots ---
-    page_html = page_layout or _fallback_page_layout()
+    page_html = _page_layout_raw or _fallback_page_layout()
     page_html = _inject_slot(page_html, "header", header_html)
     page_html = _inject_slot(page_html, "search", search_html)
     page_html = _inject_slot(page_html, "content", table_with_schema)

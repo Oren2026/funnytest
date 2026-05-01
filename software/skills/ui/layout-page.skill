@@ -1,6 +1,92 @@
 # skill: layout-page
-# depends: layout-header, search-bar, table-data, modal-form, confirm-dialog, toast-notify
-# prohibit: none
+
+## Contract
+- **語義承諾**：提供頁面主結構，包含 header、搜尋區、內容區、彈窗、確認框、toast 六個可注入區塊
+- **輸入資料格式**：
+  ```json
+  {
+    "slot:header": "HTML string — 頁面頂部 header（通常包含標題 + 操作按鈕）",
+    "slot:search": "HTML string — 搜尋/過濾工具列",
+    "slot:content": "HTML string — 主要內容區（通常是表格或列表）",
+    "slot:modal": "HTML string — 表單彈窗",
+    "slot:confirm": "HTML string — 確認對話框",
+    "slot:toast": "HTML string — Toast 通知容器"
+  }
+  ```
+- **輸出語義**：一個 `<div class="page-wrapper">` 結構，包含六個 `data-slot` 注入點
+- **操作邊界**：
+  - ✅ 做：提供結構、把收到的 HTML 注入到對應位置
+  - ❌ 不做：生成內容、處理資料、管理狀態
+
+## Dependencies
+- **依賴**：無（本身是佈局，不依賴其他技能）
+- **可選依賴**：無
+- **排斥**：無
+
+## Slots
+- **slot:header**：頁面頂部（`data-slot="header"`），接收 layout-header skill 的輸出
+- **slot:search**：搜尋工具列（`data-slot="search"`），接收 search-bar skill 的輸出
+- **slot:content**：主要內容區（`data-slot="content"`），接收 table-data skill 的輸出
+- **slot:modal**：表單彈窗（`data-slot="modal"`），接收 modal-form skill 的輸出
+- **slot:confirm**：確認對話框（`data-slot="confirm"`），接收 confirm-dialog skill 的輸出
+- **slot:toast**：通知區（`data-slot="toast"`），接收 toast-notify skill 的輸出
+- **slot:actions**：header 內的操作按鈕區（`data-slot="actions"`），由 Composer 注入
+
+## Boundaries
+- **系統邊界**：Presentation Layer（純結構，不含業務邏輯）
+- **操作邊界**：
+  - ✅ 操作：DOM 結構、`data-slot` 屬性標記注入點
+  - ❌ 不操作：資料處理、狀態管理、網路請求
+- **狀態邊界**：Stateless（純佈局，無內部狀態）
+
+## Examples
+
+### 基本輸出
+```html
+<div class="page-wrapper">
+  <div data-slot="header"></div>
+  <main class="page-main">
+    <div data-slot="search"></div>
+    <div data-slot="content"></div>
+  </main>
+  <div data-slot="modal"></div>
+  <div data-slot="confirm"></div>
+  <div data-slot="toast"></div>
+</div>
+```
+
+### 全部注入後
+```html
+<div class="page-wrapper">
+  <div data-slot="header">
+    <header class="warehouse-header">
+      <div class="header-left">
+        <span class="header-title">任務</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn-primary">+ 新增</button>
+      </div>
+    </header>
+  </div>
+  <main class="page-main">
+    <div data-slot="search">
+      <!-- search-bar output -->
+    </div>
+    <div data-slot="content">
+      <!-- table-data output -->
+    </div>
+  </main>
+  <div data-slot="modal">
+    <!-- modal-form output -->
+  </div>
+  <div data-slot="confirm">
+    <!-- confirm-dialog output -->
+  </div>
+  <div data-slot="toast">
+    <!-- toast-notify output -->
+  </div>
+</div>
+```
 
 [html]
 <div class="page-wrapper">
