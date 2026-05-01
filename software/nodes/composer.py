@@ -1,10 +1,216 @@
-"""節點 5：Composer（組合器）"""
+"""節點 5：Composer（組合器）— Spec-aware version"""
 import re
-from typing import List, Dict
+import json
+from typing import List, Dict, Optional
 from pathlib import Path
+from dataclasses import dataclass, field
 
 
 SKILLS_BASE = Path(__file__).parent.parent / "skills"
+
+
+@dataclass
+class SkillSpec:
+    """一個 Skill 的完整 Spec 描述（從 .skill 檔案解析）"""
+    name: str
+    semantic_promise: str = ""          # Contract: 語義承諾（一句话）
+    input_format: str = ""              # Contract: 輸入格式描述
+    output_semantic: str = ""            # Contract: 輸出語義
+    does: List[str] = field(default_factory=list)   # Contract: ✅ 做的清單
+    does_not: List[str] = field(default_factory=list) # Contract: ❌ 不做的清單
+    failure_signals: List[str] = field(default_factory=list)  # Contract: 失敗信號
+    dependencies: List[str] = field(default_factory=list)   # Dependencies: 依賴
+    optional_deps: List[str] = field(default_factory=list)  # Dependencies: 可選依賴
+    excludes: List[str] = field(default_factory=list)      # Dependencies: 排斥
+    slots_provides: List[str] = field(default_factory=list) # Slots: 提供這些 slot
+    slots_consumes: List[str] = field(default_factory=list) # Slots: 需要這些 slot（由別人注入）
+    boundary_layer: str = ""             # Boundaries: 系統邊界（presentation/business/data）
+    is_stateful: bool = False            # Boundaries: 是否保有狀態
+    # 原始程式碼區塊
+    html: str = ""
+    style: str = ""
+    react: str = ""
+
+
+def load_skill_spec(skill_name: str) -> Optional[SkillSpec]:
+    """讀取並解析一個 .skill 檔案的 Spec 區塊（Contract / Dependencies / Slots / Boundaries）。"""
+    for subdir in ["ui", "styles", "core", "algorithms", "structures", "system", "behaviors"]:
+        skill_dir = SKILLS_BASE / subdir
+        if not skill_dir.exists():
+            continue
+        matches = list(skill_dir.glob(skill_name + ".skill"))
+        if not matches:
+            continue
+        content = matches[0].read_text()
+        spec = _parse_spec_sections(skill_name, content)
+        # 同時載入程式碼區塊
+        spec.html = _extract_section(content, "html")
+        spec.style = _extract_section(content, "style")
+        spec.react = _extract_section(content, "react")
+        return spec
+    return None
+
+
+def _parse_spec_sections(name: str, content: str) -> SkillSpec:
+    """從 skill 檔案內容解析五個 Spec 區塊。"""
+    spec = SkillSpec(name=name)
+
+    # 解析 ## Contract
+    contract_match = re.search(r"## Contract\n(.*?)(?=\n## |$)", content, re.DOTALL)
+    if contract_match:
+        contract_text = contract_match.group(1)
+        # 語義承諾
+        m = re.search(r"\*\*語義承諾\*\*[：:]\s*(.+)", contract_text)
+        if m:
+            spec.semantic_promise = m.group(1).strip()
+        # 輸入格式（簡單取第一個 ```json 塊）
+        m = re.search(r"```json\n(.*?)```", contract_text, re.DOTALL)
+        if m:
+            spec.input_format = m.group(1).strip()
+        # 輸出語義
+        m = re.search(r"\*\*輸出語義\*\*[：:]\s*(.+)", contract_text)
+        if m:
+            spec.output_semantic = m.group(1).strip()
+        # ✅ 做
+        for m in re.findall(r"✅\s*(.+)", contract_text):
+            spec.does.append(m.strip())
+        # ❌ 不做
+        for m in re.findall(r"❌\s*(.+)", contract_text):
+            spec.does_not.append(m.strip())
+        # 失敗信號
+        for m in re.findall(r"`([^`]+)`", contract_text):
+            val = m.strip()
+            if val and val not in spec.failure_signals:
+                spec.failure_signals.append(val)
+
+    # 解析 ## Dependencies
+    deps_match = re.search(r"## Dependencies\n(.*?)(?=\n## |$)", content, re.DOTALL)
+    if deps_match:
+        deps_text = deps_match.group(1)
+        for m in re.findall(r"\*\*依賴\*\*[：:]\s*(.+)", deps_text):
+            spec.dependencies = [x.strip() for x in re.split(r"[,，]", m) if x.strip()]
+        for m in re.findall(r"\*\*可選依賴\*\*[：:]\s*(.+)", deps_text):
+            spec.optional_deps = [x.strip() for x in re.split(r"[,，]", m) if x.strip()]
+        for m in re.findall(r"\*\*排斥\*\*[：:]\s*(.+)", deps_text):
+            spec.excludes = [x.strip() for x in re.split(r"[,，]", m) if x.strip()]
+        # 如果是「無」就保持空列表
+        if spec.dependencies == ["無"]:
+            spec.dependencies = []
+        if spec.excludes == ["無"]:
+            spec.excludes = []
+
+    # 解析 ## Slots
+    slots_match = re.search(r"## Slots\n(.*?)(?=\n## |$)", content, re.DOTALL)
+    if slots_match:
+        slots_text = slots_match.group(1)
+        # slot:xxx 格式
+        for m in re.findall(r"\*\*slot:(\w+)\*\*[：:]?\s*(.*)", slots_text):
+            slot_name = m[0]
+            spec.slots_provides.append(slot_name)
+        # 也解析 <!-- slot:xxx --> 語法（舊格式兼容）
+        for m in re.findall(r"<!--\s*slot:(\w+)\s*-->", content):
+            if m not in spec.slots_provides:
+                spec.slots_provides.append(m)
+        # consumes: 由 parent 注入
+        for m in re.findall(r"由\s+(\w+)\s+注入", slots_text):
+            if m not in spec.slots_consumes:
+                spec.slots_consumes.append(m)
+
+    # 解析 ## Boundaries
+    bound_match = re.search(r"## Boundaries\n(.*?)(?=\n## |$)", content, re.DOTALL)
+    if bound_match:
+        bound_text = bound_match.group(1)
+        m = re.search(r"\*\*系統邊界\*\*[：:]\s*(.+)", bound_text)
+        if m:
+            spec.boundary_layer = m.group(1).strip()
+        m = re.search(r"Stateless", bound_text)
+        if not m:
+            # 沒有明確說 Stateless，預設 Stateful
+            spec.is_stateful = True
+
+    return spec
+
+
+def _extract_section(content: str, section: str) -> str:
+    """從 skill 檔案內容提取 [section] 區塊。"""
+    tag = "[" + section + "]"
+    start = content.find(tag)
+    if start == -1:
+        tag = "[" + section.upper() + "]"
+        start = content.find(tag)
+    if start == -1:
+        return ""
+    end = content.find("\n[", start + 1)
+    if end == -1:
+        end = len(content)
+    return content[start + len(tag):end].strip()
+
+
+class SkillRegistry:
+    """
+    全域 Skill 註冊表，建立 slot → skill 的反向索引。
+    讓 Composer 可以根據「誰能提供這個 slot」動態選擇，而不是硬編碼技能名。
+    """
+
+    _instance: Optional["SkillRegistry"] = None
+
+    def __init__(self):
+        self.by_name: Dict[str, SkillSpec] = {}
+        self.slot_providers: Dict[str, List[str]] = {}  # slot_name → [skill_name, ...]
+        self.initialized: bool = False
+
+    @classmethod
+    def get(cls) -> "SkillRegistry":
+        if cls._instance is None:
+            cls._instance = cls()
+            cls._instance._build()
+        return cls._instance
+
+    def _build(self):
+        """掃描 skills/ 目錄，建立註冊表。"""
+        if self.initialized:
+            return
+        for subdir in ["ui", "styles", "core", "algorithms", "structures", "system", "behaviors"]:
+            skill_dir = SKILLS_BASE / subdir
+            if not skill_dir.exists():
+                continue
+            for skill_file in skill_dir.glob("*.skill"):
+                spec = load_skill_spec(skill_file.stem)
+                if spec is None:
+                    continue
+                self.by_name[spec.name] = spec
+                for slot in spec.slots_provides:
+                    if slot not in self.slot_providers:
+                        self.slot_providers[slot] = []
+                    self.slot_providers[slot].append(spec.name)
+        self.initialized = True
+
+    def find_skill_for_slot(self, slot_name: str, context: str = "") -> Optional[str]:
+        """
+        根據 slot 名稱和上下文語意，找到最適合提供這個 slot 的技能。
+        目前實現：優先找名字包含 slot 相關關鍵字的 skill。
+        進階實現：根據 SkillSpec.contract 語意匹配（預留擴展點）。
+        """
+        providers = self.slot_providers.get(slot_name, [])
+        if not providers:
+            return None
+        # 簡單策略：名字包含 slot_name 的優先
+        for p in providers:
+            if slot_name in p:
+                return p
+        return providers[0] if providers else None
+
+    def get_spec(self, skill_name: str) -> Optional[SkillSpec]:
+        return self.by_name.get(skill_name)
+
+    def get_slot_providers(self, slot_name: str) -> List[str]:
+        return self.slot_providers.get(slot_name, [])
+
+    def reload(self):
+        """清除快取並重建（用於 skill 檔案變更後）。"""
+        self._instance = None
+        self.__init__()
+
 
 
 def load_skill_blocks(skill_name: str, section: str = "html") -> str:
@@ -199,7 +405,16 @@ def compose_output(
 
 
 def _compose_html(skills_used, schema, profile, warnings) -> Dict:
-    """Compose HTML output by loading skill blocks and injecting schema-driven content."""
+    """
+    Compose HTML output by loading skill blocks and injecting schema-driven content.
+
+    Spec-aware enhancement:
+    - Uses SkillRegistry to find which skill provides each slot
+    - Falls back to hardcoded names for backward compatibility
+    - Emits warnings when using fallback (indicating missing Spec declarations)
+    """
+    registry = SkillRegistry.get()
+
     # --- Load CSS from all skills ---
     all_css = []
     theme_css = ""
@@ -211,13 +426,39 @@ def _compose_html(skills_used, schema, profile, warnings) -> Dict:
             else:
                 all_css.append(css)
 
-    # --- Load [html] blocks from key skills ---
-    header_html   = load_skill_blocks("layout-header", "html")
-    search_html   = load_skill_blocks("search-bar", "html")
-    table_html    = load_skill_blocks("table-data", "html")
-    modal_html    = load_skill_blocks("modal-form", "html")
-    confirm_html  = load_skill_blocks("confirm-dialog", "html")
-    toast_html    = load_skill_blocks("toast-notify", "html")
+    # --- Spec-aware slot → skill resolution ---
+    # Each (slot_name, fallback_skill_name) pair:
+    # 1. Try registry.find_skill_for_slot(slot_name)
+    # 2. Fall back to fallback_skill_name if not found or not Spec-formatted
+    slot_map = [
+        ("header",   "layout-header"),
+        ("search",   "search-bar"),
+        ("content",  "table-data"),
+        ("modal",    "modal-form"),
+        ("confirm",  "confirm-dialog"),
+        ("toast",    "toast-notify"),
+    ]
+
+    loaded_slots = {}
+    for slot_name, fallback_skill in slot_map:
+        skill_name = registry.find_skill_for_slot(slot_name)
+        if skill_name is None:
+            # No Spec declaration → use fallback (with warning)
+            skill_name = fallback_skill
+            if profile and profile.context:
+                warnings.append(f"[Spec-aware] slot '{slot_name}': no Spec declaration found, falling back to '{skill_name}'")
+        else:
+            if skill_name != fallback_skill:
+                warnings.append(f"[Spec-aware] slot '{slot_name}': resolved to '{skill_name}' (Spec override)")
+        html = load_skill_blocks(skill_name, "html")
+        loaded_slots[slot_name] = html
+
+    header_html   = loaded_slots.get("header",   "")
+    search_html   = loaded_slots.get("search",   "")
+    table_html    = loaded_slots.get("content", "")
+    modal_html    = loaded_slots.get("modal",    "")
+    confirm_html  = loaded_slots.get("confirm",  "")
+    toast_html    = loaded_slots.get("toast",    "")
     page_layout   = load_skill_blocks("layout-page", "html")
 
     # --- Schema-driven content generation ---
