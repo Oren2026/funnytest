@@ -1,16 +1,73 @@
 # skill: empty-state
-# depends: button-primary
-# prohibit: none
 
-[html]
-<div class="empty-state" id="empty-state">
+## Contract
+- **語義承諾**: 渲染一個空狀態提示畫面，引導使用者進行首次操作
+- **輸入資料格式**: `{ icon?: string, title?: string, description?: string, action?: string, onAction?: function }`
+- **輸出語義**: HTML `<div>` 元素，包含圖示、標題、描述和可選的操作按鈕
+- **操作邊界**:
+  - ✅ 做：渲染空狀態 UI、顯示引導文字、提供操作按鈕（搭配 onAction）
+  - ❌ 不做：資料取得、商業邏輯處理、網路請求
+- **失敗信號**:
+  - `onAction` 非函式但有 action → 按鈕仍渲染，但點擊無效
+
+## Dependencies
+- **依賴**: `button-primary`（用於渲染操作按鈕樣式）
+- **可選依賴**: 無
+- **排斥**: 無
+
+## Slots
+- **slot:action**: 操作按鈕區，由 parent 或 Composer 注入，負責處理點擊行為
+
+## Boundaries
+- **系統邊界**: Presentation Layer（只處理 UI 渲染，不管資料或商業邏輯）
+- **操作邊界**:
+  - ✅ 操作：DOM 渲染、按鈕點擊事件（轉發给 onAction）
+  - ❌ 不操作：localStorage、網路請求、函式級變數
+- **狀態邊界**: Stateless（接收 props，無內部狀態）
+
+## Examples
+
+### 基本用法
+**輸入**：
+```json
+{
+  "icon": "📭",
+  "title": "尚無資料",
+  "description": "目前沒有任何項目。",
+  "action": "新增項目",
+  "onAction": () => openAdd()
+}
+```
+**輸出**：
+```html
+<div class="empty-state">
   <div class="empty-icon">📭</div>
   <h3 class="empty-title">尚無資料</h3>
-  <p class="empty-description">目前沒有任何項目。點擊下方按鈕新增第一筆。</p>
+  <p class="empty-description">目前沒有任何項目。</p>
   <button class="btn-primary" onclick="openAdd()">新增項目</button>
 </div>
+```
 
-[react]
+### 無按鈕版本
+**輸入**：
+```json
+{
+  "icon": "📭",
+  "title": "尚無資料",
+  "description": "目前沒有任何項目。"
+}
+```
+**輸出**：
+```html
+<div class="empty-state">
+  <div class="empty-icon">📭</div>
+  <h3 class="empty-title">尚無資料</h3>
+  <p class="empty-description">目前沒有任何項目。</p>
+</div>
+```
+
+### React Component
+```jsx
 const EmptyState = ({ icon = '📭', title = '尚無資料', description = '目前沒有任何項目。', action, onAction }) => {
   return (
     <div className="empty-state">
@@ -23,8 +80,10 @@ const EmptyState = ({ icon = '📭', title = '尚無資料', description = '目�
     </div>
   );
 };
+```
 
-[style]
+### 樣式定義
+```css
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -36,3 +95,4 @@ const EmptyState = ({ icon = '📭', title = '尚無資料', description = '目�
 .empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.8; }
 .empty-title { font-size: 20px; font-weight: 600; color: #374151; margin: 0 0 8px 0; }
 .empty-description { font-size: 14px; color: #9ca3af; margin: 0 0 24px 0; max-width: 300px; }
+```

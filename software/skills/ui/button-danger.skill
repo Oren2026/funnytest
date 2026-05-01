@@ -1,6 +1,69 @@
 # skill: button-danger
-# depends: none
-# prohibit: none
+
+## Contract
+- **語義承諾**：渲染一個危險操作按鈕（如刪除），紅色主題，用於需要用戶謹慎確認的場景
+- **輸入資料格式**：
+  - `label`: `string` — 按鈕顯示文字（必填）
+  - `onClick`: `function` — 點擊回調（可選）
+- **輸出語義**：`<button class="btn-danger">` 或 `<button className="btn-danger">`（React）
+- **操作邊界**：
+  - ✅ 做：渲染按鈕、套用危險樣式（紅色）、觸發 onClick
+  - ❌ 不做：管理狀態、顯示 confirm dialog、處理刪除邏輯
+- **失敗信號**：
+  - `label` 未提供 → 按鈕顯示空白但仍可點擊
+
+## Dependencies
+- **依賴**：無
+- **可選依賴**：無
+- **排斥**：無
+
+## Slots
+- **slot:label**：按鈕文字內容（可由父元件注入）
+
+## Boundaries
+- **系統邊界**：Presentation Layer
+- **操作邊界**：
+  - ✅ 操作：DOM 渲染、樣式套用、onClick 事件
+  - ❌ 不操作：狀態管理、資料刪除
+- **狀態邊界**：Stateless（純渲染元件）
+
+## Examples
+
+### 基本用法
+**輸入**：
+```html
+<button class="btn-danger" onclick="deleteItem()">刪除</button>
+```
+**輸出**：（直接渲染）
+
+### React 用法
+**輸入**：
+```jsx
+<ButtonDanger label="刪除" onClick={() => deleteItem()} />
+```
+**輸出**：
+```html
+<button class="btn-danger" onclick="deleteItem()">刪除</button>
+```
+
+### 樣式定義
+```css
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+  background: #fff;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-danger:hover { background: #fef2f2; border-color: #f87171; }
+```
 
 [html]
 <button class="btn-danger" onclick="">{label}</button>

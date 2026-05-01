@@ -1,13 +1,87 @@
 # skill: card-group
-# depends: button-primary
-# prohibit: none
 
-[html]
-<div class="card-group" data-cards="slot">
-  <!-- cards injected here -->
+## Contract
+- **語義承諾**: 渲染一個網格佈局的卡片容器元件，支援多欄位響應式排列
+- **輸入資料格式**: `{ children?: ReactNode, columns?: number }`（CardGroup）、`{ title: string, children?: ReactNode, actions?: ReactNode }`（Card）
+- **輸出語義**: HTML `<div>` 元素，帶有 CSS Grid 佈局的卡片群組
+- **操作邊界**:
+  - ✅ 做：支援自訂欄位數量、卡片 hover 陰影效果、靈活的卡片 header/actions/body 結構
+  - ❌ 不做：處理卡片點擊邏輯、管理卡片資料狀態、網路請求
+- **失敗信號**:
+  - `columns` 非數字 → 使用預設值 3
+  - `children` 為空 → 渲染空容器（仍合約有效）
+
+## Dependencies
+- **依賴**: 無
+- **可選依賴**: 無
+- **排斥**: 無
+
+## Slots
+- **slot:cards**: 卡片內容注入點，由 parent 或 Composer 注入多個 Card 元件
+- **slot:card-actions**: 卡片右上角操作區，由 parent 或 Composer 注入按鈕等操作元件
+
+## Boundaries
+- **系統邊界**: Presentation Layer（只處理 UI 渲染，不管卡片資料或商業邏輯）
+- **操作邊界**:
+  - ✅ 操作：DOM 渲染、網格佈局、hover 視覺效果、卡片內部結構
+  - ❌ 不操作：localStorage、網路請求、卡片點擊處理、外部狀態管理
+- **狀態邊界**: Stateless（接收 props，無內部狀態）
+
+## Examples
+
+### 基本用法（CardGroup + Card）
+**輸入**：
+```json
+{
+  "columns": 3,
+  "children": [
+    { "title": "卡片一", "children": "內容區塊", "actions": null },
+    { "title": "卡片二", "children": "內容區塊", "actions": null }
+  ]
+}
+```
+**輸出**：
+```html
+<div class="card-group">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">卡片一</h3>
+    </div>
+    <div class="card-body">內容區塊</div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">卡片二</h3>
+    </div>
+    <div class="card-body">內容區塊</div>
+  </div>
 </div>
+```
 
-[react]
+### 帶操作按鈕的卡片
+**輸入**：
+```json
+{
+  "title": "會員管理",
+  "children": "會員列表內容",
+  "actions": [{ "label": "編輯", "type": "button-primary" }]
+}
+```
+**輸出**：
+```html
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">會員管理</h3>
+    <div class="card-actions">
+      <button class="btn-primary">編輯</button>
+    </div>
+  </div>
+  <div class="card-body">會員列表內容</div>
+</div>
+```
+
+### React 元件
+```jsx
 const CardGroup = ({ children, columns = 3 }) => (
   <div className="card-group" style={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, 1fr)`, gap: '16px' }}>
     {children}
@@ -23,8 +97,17 @@ const Card = ({ title, children, actions }) => (
     <div className="card-body">{children}</div>
   </div>
 );
+```
 
-[style]
+### HTML 結構
+```html
+<div class="card-group" data-cards="slot">
+  <!-- cards injected here -->
+</div>
+```
+
+### 樣式定義
+```css
 .card-group {
   display: grid;
   gap: 16px;
@@ -48,3 +131,4 @@ const Card = ({ title, children, actions }) => (
 .card-title { margin: 0; font-size: 16px; font-weight: 600; color: #1f2937; }
 .card-actions { display: flex; gap: 8px; }
 .card-body { padding: 20px; }
+```

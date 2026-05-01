@@ -1,9 +1,37 @@
 # skill: theme-brutal
-# depends: none
-# prohibit: none
 
-# 主題：Neo-Brutalism 大膽撞色風
-# 特色：黑粗框、高對比、鮮豔色塊、0 陰影
+## Contract
+- **語義承諾**：Neo-Brutalism 大膽撞色風，以黑粗框（2-3px #000）、高對比、鮮豔色塊、零陰影為特徵
+- **CSS Custom Properties**：
+  - `--bg: #FFF8F0` — 頁面背景（米白）
+  - `--card-bg: #FFFFFF` — 卡片背景
+  - `--border-color: #000000` — 邊框色（純黑）
+  - `--accent: #FF6B35` — 主強調色（橙）
+  - `--danger: #FF0044` — 危險/錯誤色
+  - `--success: #00C853` — 成功色
+  - `--warning: #FFD600` — 警告色
+  - `--text: #000000` — 主要文字
+
+## Dependencies
+- **依賴**：無
+- **可選依賴**：無
+- **排斥**：無
+
+## Slots
+無 slots（主題是全域 CSS）
+
+## Boundaries
+- **系統邊界**：Presentation Layer
+- **操作邊界**：
+  - ✅ 操作：全域 CSS 樣式定義、黑粗框 DOM 覆寫
+  - ❌ 不操作：JavaScript 邏輯、狀態管理
+
+## Examples
+```css
+body { background: var(--bg); color: var(--text); }
+.card { background: var(--card-bg); border: 2px solid var(--border-color); }
+.btn-primary { background: var(--accent); box-shadow: 4px 4px 0 var(--border-color); }
+```
 
 [style]
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,10 +73,7 @@ body {
   transition: all 0.1s ease !important;
   color: #000 !important;
 }
-.btn-primary:hover {
-  transform: translate(-2px, -2px) !important;
-  box-shadow: 6px 6px 0 var(--border-color) !important;
-}
+.btn-primary:hover { transform: translate(-2px, -2px) !important; box-shadow: 6px 6px 0 var(--border-color) !important; }
 
 .btn-edit {
   border: 2px solid var(--border-color) !important;
@@ -59,10 +84,7 @@ body {
   box-shadow: 2px 2px 0 var(--border-color) !important;
   transition: all 0.1s ease !important;
 }
-.btn-edit:hover {
-  transform: translate(-1px, -1px) !important;
-  box-shadow: 3px 3px 0 var(--border-color) !important;
-}
+.btn-edit:hover { transform: translate(-1px, -1px) !important; box-shadow: 3px 3px 0 var(--border-color) !important; }
 
 .btn-delete {
   border: 2px solid var(--border-color) !important;
@@ -73,10 +95,7 @@ body {
   box-shadow: 2px 2px 0 var(--border-color) !important;
   transition: all 0.1s ease !important;
 }
-.btn-delete:hover {
-  transform: translate(-1px, -1px) !important;
-  box-shadow: 3px 3px 0 var(--border-color) !important;
-}
+.btn-delete:hover { transform: translate(-1px, -1px) !important; box-shadow: 3px 3px 0 var(--border-color) !important; }
 
 .inventory-table { border-collapse: separate !important; border-spacing: 0 !important; border: 2px solid var(--border-color) !important; }
 .inventory-table th {
@@ -98,11 +117,7 @@ body {
 }
 .inventory-table tr:hover td { background: var(--warning) !important; }
 
-.toolbar {
-  background: transparent !important;
-  border: none !important;
-  padding: 24px 0 !important;
-}
+.toolbar { background: transparent !important; border: none !important; padding: 24px 0 !important; }
 .search-box input {
   border: 2px solid var(--border-color) !important;
   border-radius: 0 !important;

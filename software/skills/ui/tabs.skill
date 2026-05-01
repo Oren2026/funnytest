@@ -1,6 +1,63 @@
 # skill: tabs
-# depends: button-primary
-# prohibit: none
+
+## Contract
+
+Tabbed navigation component that displays a list of tab buttons and associated content panels. Only one tab may be active at a time. Clicking a tab switches the visible panel and highlights the selected tab button.
+
+**Inputs:**
+- `tabs`: Array of tab objects, each with `value` (string), `label` (string), and `children` (react nodes for React variant)
+- `defaultTab`: Initial active tab value (optional, defaults to first tab)
+
+**Outputs:**
+- Active tab panel is visible; all others are hidden
+- Active tab button shows visual selected state (blue border-bottom, bold text)
+
+**Behavior:**
+- Clicking a tab button sets that tab as active
+- Only one tab is active at a time
+- Panel visibility toggles based on active state
+- No external state management required (self-contained)
+
+## Dependencies
+
+- `button-primary` — tab buttons inherit button base styles
+
+## Slots
+
+None.
+
+## Boundaries
+
+- HTML/React only — no SSR considerations for this component
+- Assumes `display: none` toggle for panel visibility (not conditional rendering) to preserve DOM structure
+- No keyboard navigation or ARIA roles beyond basic `role="tablist"`
+
+## Examples
+
+**Example 1: Basic three tabs**
+
+```jsx
+<Tabs
+  tabs={[
+    { value: 'tab1', label: '標籤一', children: <p>內容一</p> },
+    { value: 'tab2', label: '標籤二', children: <p>內容二</p> },
+    { value: 'tab3', label: '標籤三', children: <p>內容三</p> },
+  ]}
+/>
+```
+
+**Example 2: With defaultTab**
+
+```jsx
+<Tabs
+  defaultTab="tab2"
+  tabs={[
+    { value: 'tab1', label: '標籤一', children: <p>內容一</p> },
+    { value: 'tab2', label: '標籤二', children: <p>內容二</p> },
+    { value: 'tab3', label: '標籤三', children: <p>內容三</p> },
+  ]}
+/>
+```
 
 [html]
 <div class="tabs" id="tab-container">

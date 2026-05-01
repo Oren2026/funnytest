@@ -1,6 +1,76 @@
-# skill: pagination
-# depends: button-primary, button-danger
-# prohibit: none
+## Contract
+
+**skill:** pagination  
+**description:** Page navigation component for list/table views — prev/next buttons, numbered page buttons, and page info display.  
+**slot-inject:** page-numbers (for external page-number injection)
+
+### Inputs
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `current` | number | 1 | Current active page |
+| `total` | number | 1 | Total number of pages |
+
+### Outputs
+| Name | Description |
+|------|-------------|
+| `onChange(page)` | Callback fired when user selects a page |
+
+---
+
+## Dependencies
+
+- `button-primary` (blue active state via `.active`)
+- `button-danger` (not directly used, reserved)
+
+---
+
+## Slots
+
+| Slot Name | Selector | Description |
+|-----------|----------|-------------|
+| `page-numbers` | `#page-numbers` | Inject custom page number buttons |
+
+---
+
+## Boundaries
+
+- `current` is clamped to `[1, total]`  
+- Prev button disabled when `current === 1`  
+- Next button disabled when `current === total`  
+- All page buttons hidden when `total === 1`  
+- `total` must be ≥ 1 (enforced by min prop validation in React)  
+- Page numbers render every page when `total ≤ 7`; ellipsis truncation out of scope  
+
+---
+
+## Examples
+
+```html
+<!-- Basic usage -->
+<div class="pagination" id="pagination">
+  <button class="page-btn page-prev" onclick="goPage(prevPage)" disabled>‹ 上一頁</button>
+  <div class="page-numbers" id="page-numbers">
+    <button class="page-num active" onclick="goPage(1)">1</button>
+    <button class="page-num" onclick="goPage(2)">2</button>
+    <button class="page-num" onclick="goPage(3)">3</button>
+  </div>
+  <button class="page-btn page-next" onclick="goPage(nextPage)">下一頁 ›</button>
+  <span class="page-info" id="page-info">第 1 頁，共 5 頁</span>
+</div>
+
+<!-- With slot injection -->
+<template id="page-numbers-tpl">
+  <button class="page-num" onclick="goPage(1)">1</button>
+  <button class="page-num" onclick="goPage(2)">2</button>
+</template>
+```
+
+```react
+// React component usage
+<Pagination current={3} total={10} onChange={page => console.log(page)} />
+```
+
+---
 
 [html]
 <div class="pagination" id="pagination">

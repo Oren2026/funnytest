@@ -1,8 +1,64 @@
-# skill: form-layout
-# depends: button-primary, button-danger
-# prohibit: none
+# Spec: form-layout
+
+## Contract
+
+A flexible two-column form layout with label/input pairs arranged in rows, supporting full-width fields, text inputs, selects, and textareas. Footer contains cancel and submit buttons.
+
+## Dependencies
+
+- button-primary
+- button-danger
+
+## Slots
+
+| Slot | Description |
+|------|-------------|
+| form-row | Wraps 1-2 form-field elements in a horizontal row |
+| form-field | Label + input/select/textarea pair |
+| form-field.full | Full-width field spanning both columns |
+| form-footer | Action buttons container |
+
+## Boundaries
+
+- Grid uses 2-column layout (1fr 1fr)
+- Full-width fields use `.full` class to span all columns
+- Minimum 0 for number inputs
+- Cancel button is optional (hidden when onCancel not provided)
+- Fields default to empty string if no default value provided
+
+## Examples
+
+### Two-Column Form with Mixed Fields
+
+```
+名稱        分類
+[輸入框]    [下拉選單]
+
+數量        狀態
+[數字輸入]  [下拉選單]
+
+備註
+[文字區塊 textarea        ]
+
+              [取消] [儲存]
+```
+
+### Single Row with Full-Width Field
+
+```
+名稱        分類
+[輸入框]    [下拉選單]
+
+備註 (full-width)
+[文字區塊                ]
+
+              [取消] [儲存]
+```
+
+---
 
 [html]
+```html
 <form class="form-layout" id="main-form">
   <div class="form-row">
     <div class="form-field">
@@ -38,8 +94,10 @@
     <button type="submit" class="btn-primary">儲存</button>
   </div>
 </form>
+```
 
 [react]
+```jsx
 const FormLayout = ({ fields = [], onSubmit, onCancel }) => {
   const [form, setForm] = React.useState(() => {
     const init = {};
@@ -72,8 +130,10 @@ const FormLayout = ({ fields = [], onSubmit, onCancel }) => {
     </form>
   );
 };
+```
 
 [style]
+```css
 .form-layout { display: flex; flex-direction: column; gap: 16px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .form-field { display: flex; flex-direction: column; gap: 6px; }
@@ -92,3 +152,4 @@ const FormLayout = ({ fields = [], onSubmit, onCancel }) => {
 .form-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
 .btn-cancel { padding: 10px 20px; border-radius: 6px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-size: 14px; }
 .btn-cancel:hover { background: #f9fafb; }
+```

@@ -1,6 +1,63 @@
 # skill: sidebar
-# depends: button-primary
-# prohibit: none
+
+## Contract
+
+Sidebar navigation component providing a vertical navigation panel with header, nav items, and toggle support. Renders as a fixed-width aside element with dark theme styling. Active item is highlighted with a blue left border and lighter background.
+
+**Slots**: none (self-contained)
+
+**Children**: none
+
+## Dependencies
+
+- `button-primary` (implicit — toggle button uses primary button styling pattern)
+
+## Slots
+
+None — sidebar is a self-contained component that receives its navigation items via props (React) or renders static HTML structure.
+
+## Boundaries
+
+- Prohibits: direct child element injection (items must be provided via `items` prop in React or pre-rendered in HTML)
+- Width is fixed at 240px desktop, collapses to 60px on mobile (< 768px)
+- Title and label text hidden on mobile; only icons visible
+
+## Examples
+
+### React Usage
+
+```jsx
+const navItems = [
+  { value: 'dashboard', label: '儀表板', icon: '📊' },
+  { value: 'list', label: '列表', icon: '📋' },
+  { value: 'settings', label: '設定', icon: '⚙️' },
+];
+
+<Sidebar items={navItems} activeItem="dashboard" onNavigate={console.log} />
+```
+
+### HTML Usage
+
+```html
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-logo">📦</span>
+    <span class="sidebar-title">系統</span>
+  </div>
+  <nav class="sidebar-nav" id="sidebar-nav">
+    <a class="nav-item active" href="#" onclick="navigate('dashboard')">
+      <span class="nav-icon">📊</span> 儀表板
+    </a>
+    <a class="nav-item" href="#" onclick="navigate('list')">
+      <span class="nav-icon">📋</span> 列表
+    </a>
+    <a class="nav-item" href="#" onclick="navigate('settings')">
+      <span class="nav-icon">⚙️</span> 設定
+    </a>
+  </nav>
+  <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+</aside>
+```
 
 [html]
 <aside class="sidebar" id="sidebar">

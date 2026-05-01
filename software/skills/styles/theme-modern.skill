@@ -1,9 +1,46 @@
 # skill: theme-modern
-# depends: none
-# prohibit: none
 
-# 主題：Modern Minimal 深色簡約風
-# 特色：深灰背景、白色卡片、精准間距、藍色強調
+## Contract
+- **語義承諾**：深色簡約風格，以深灰（#0f172a）為底、白卡片承載內容、藍色（#3b82f6）為主強調色，精準間距
+- **CSS Custom Properties**：
+  - `--bg-page: #0f172a` — 頁面背景
+  - `--bg-card: #1e293b` — 卡片背景
+  - `--bg-input: #0f172a` — 輸入框背景
+  - `--border: #334155` — 邊框色
+  - `--accent: #3b82f6` — 主強調色（藍）
+  - `--accent-hover: #60a5fa` — 強調色懸停態
+  - `--danger: #ef4444` — 危險/錯誤色
+  - `--success: #22c55e` — 成功色
+  - `--warning: #f59e0b` — 警告色
+  - `--text-primary: #f8fafc` — 主要文字
+  - `--text-secondary: #94a3b8` — 次要文字
+  - `--text-muted: #64748b` — 淡化文字
+
+## Dependencies
+- **依賴**：無
+- **可選依賴**：無
+- **排斥**：無
+
+## Slots
+無 slots（主題是全域 CSS，無注入點）
+
+## Boundaries
+- **系統邊界**：Presentation Layer
+- **操作邊界**：
+  - ✅ 操作：全域 CSS 樣式定義、DOM 元素覆寫
+  - ❌ 不操作：JavaScript 邏輯、狀態管理、網路請求
+
+## Examples
+```css
+/* 套用到頁面 */
+body { background: var(--bg-page); color: var(--text-primary); }
+/* 卡片元件 */
+background: var(--bg-card); border: 1px solid var(--border);
+/* 主要操作 */
+background: var(--accent);
+/* 危險操作 */
+color: var(--danger);
+```
 
 [style]
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap');

@@ -1,6 +1,44 @@
 # skill: progress-bar
-# depends: none
-# prohibit: none
+
+## Contract
+A progress indicator component that displays percentage completion with an optional detail line. Supports both linear bar and circular variants.
+
+### Props
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `value` | `number` | `0` | Progress percentage (0–100) |
+| `label` | `string` | `'處理進度'` | Header label text |
+| `detail` | `string` | `''` | Optional detail line below the bar |
+
+### Circle Props
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `value` | `number` | `0` | Progress percentage (0–100) |
+| `size` | `number` | `80` | SVG width/height in px |
+| `stroke` | `number` | `8` | Stroke width in px |
+
+## Dependencies
+none
+
+## Slots
+none
+
+## Boundaries
+- `value` must be between 0 and 100; out-of-range values are clamped
+- `size` and `stroke` must be positive numbers
+- Circular progress uses `strokeLinecap="round"` for rounded line ends
+
+## Examples
+
+### Linear Bar
+```jsx
+<ProgressBar value={75} label="處理進度" detail="正在處理第 15 筆，共 20 筆" />
+```
+
+### Circular
+```jsx
+<ProgressCircle value={60} size={80} stroke={8} />
+```
 
 [html]
 <div class="progress-container" id="progress-container">
@@ -16,14 +54,15 @@
 
 [react]
 const ProgressBar = ({ value = 0, label = '處理進度', detail = '' }) => {
+  const clamped = Math.min(100, Math.max(0, value));
   return (
     <div className="progress-container">
       <div className="progress-header">
         <span className="progress-label">{label}</span>
-        <span className="progress-value">{value}%</span>
+        <span className="progress-value">{clamped}%</span>
       </div>
       <div className="progress-track">
-        <div className="progress-fill" style={{ width: `${value}%` }}></div>
+        <div className="progress-fill" style={{ width: `${clamped}%` }}></div>
       </div>
       {detail && <div className="progress-detail">{detail}</div>}
     </div>
@@ -31,9 +70,10 @@ const ProgressBar = ({ value = 0, label = '處理進度', detail = '' }) => {
 };
 
 const ProgressCircle = ({ value = 0, size = 80, stroke = 8 }) => {
+  const clamped = Math.min(100, Math.max(0, value));
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
-  const offset = circ - (value / 100) * circ;
+  const offset = circ - (clamped / 100) * circ;
   return (
     <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={stroke} />

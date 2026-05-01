@@ -1,16 +1,58 @@
-# skill: loading
-# depends: none
-# prohibit: none
+## Contract
+
+`loading` — 全屏載入指示器疊加層。顯示一個居中的旋轉環和載文文字，覆蓋整個視口。
+
+**元件職責**
+- 覆蓋層 (`loading-overlay`) 採用 `position: fixed` + `inset: 0`，遮罩下方內容
+- 旋轉環 (`spinner-ring`) 以 CSS animation 旋轉
+- 載入文字 (`loading-text`) 顯示狀態訊息
+
+**插槽 (Slots)**
+| 插槽名 | 預設內容 | 說明 |
+|--------|----------|------|
+| `text` | `載入中...` | 載入提示文字，可由外部覆寫 |
+
+**參數 (Props)**
+| 參數 | 類型 | 預設值 | 說明 |
+|------|------|--------|------|
+| `isLoading` | `boolean` | `false` | 為 `true` 時顯示疊加層 |
+| `text` | `string` | `"載入中..."` | 載入提示文字 |
+
+## Dependencies
+
+- 無外部依賴，純 CSS animation 實現旋轉效果
+
+## Boundaries
+
+- `isLoading=false` 時 render `null`，不掛載 DOM
+- `size` 參數控制 Spinner 尺寸（僅 React 版）
+- 疊加層 `z-index: 9999`，預設覆蓋大多數 UI
+
+## Examples
+
+```jsx
+// 基本用法
+<Loading isLoading={true} />
+
+// 自訂文字
+<Loading isLoading={true} text="處理中，請稍候..." />
+
+// Spinner 單獨使用
+<Spinner size={64} />
+```
 
 [html]
+```html
 <div class="loading-overlay" id="loading-overlay" style="display:none">
   <div class="loading-spinner">
     <div class="spinner-ring"></div>
     <p class="loading-text">載入中...</p>
   </div>
 </div>
+```
 
 [react]
+```jsx
 const Loading = ({ isLoading, text = '載入中...' }) => {
   if (!isLoading) return null;
   return (
@@ -28,8 +70,10 @@ const Spinner = ({ size = 40 }) => (
     <div className="spinner-ring" style={{ width: '100%', height: '100%' }}></div>
   </div>
 );
+```
 
 [style]
+```css
 .loading-overlay {
   position: fixed;
   inset: 0;
@@ -57,3 +101,4 @@ const Spinner = ({ size = 40 }) => (
   to { transform: rotate(360deg); }
 }
 .loading-text { font-size: 14px; color: #6b7280; margin: 0; }
+```

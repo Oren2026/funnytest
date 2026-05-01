@@ -1,9 +1,40 @@
 # skill: theme-soft
-# depends: none
-# prohibit: none
 
-# 主題：Soft Light 柔和奶油風
-# 特色：米白背景、粉色系、極柔和陰影、精緻圓角
+## Contract
+- **語義承諾**：柔和奶油風格，以米白（#FAF9F7）為底，珊瑚粉（#E07A5F）為主強調色，圓角 + 柔和陰影
+- **CSS Custom Properties**：
+  - `--bg: #FAF9F7` — 頁面背景（米白）
+  - `--card-bg: #FFFFFF` — 卡片背景
+  - `--border: #EDE9E3` — 邊框色
+  - `--accent: #E07A5F` — 主強調色（珊瑚粉）
+  - `--accent-hover: #D4624A` — 強調色懸停態
+  - `--danger: #D64045` — 危險/錯誤色
+  - `--success: #57A773` — 成功色
+  - `--warning: #E9B44C` — 警告色
+  - `--text-primary: #3D3D3D` — 主要文字
+  - `--text-secondary: #8C8C8C` — 次要文字
+  - `--text-muted: #B5B5B5` — 淡化文字
+
+## Dependencies
+- **依賴**：無
+- **可選依賴**：無
+- **排斥**：無
+
+## Slots
+無 slots（主題是全域 CSS）
+
+## Boundaries
+- **系統邊界**：Presentation Layer
+- **操作邊界**：
+  - ✅ 操作：全域 CSS 樣式定義、DOM 元素覆寫
+  - ❌ 不操作：JavaScript 邏輯、狀態管理
+
+## Examples
+```css
+body { background: var(--bg); color: var(--text-primary); }
+.card { background: var(--card-bg); border: 1px solid var(--border); }
+.btn-primary { background: var(--accent); border-radius: 20px; }
+```
 
 [style]
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&display=swap');
@@ -66,10 +97,7 @@ body {
   transition: all 0.2s ease !important;
   padding: 5px 14px !important;
 }
-.btn-edit:hover {
-  border-color: var(--accent) !important;
-  color: var(--accent) !important;
-}
+.btn-edit:hover { border-color: var(--accent) !important; color: var(--accent) !important; }
 
 .btn-delete {
   border: 1px solid rgba(214, 64, 69, 0.2) !important;
@@ -81,10 +109,7 @@ body {
   transition: all 0.2s ease !important;
   padding: 5px 14px !important;
 }
-.btn-delete:hover {
-  background: rgba(214, 64, 69, 0.1) !important;
-  border-color: var(--danger) !important;
-}
+.btn-delete:hover { background: rgba(214, 64, 69, 0.1) !important; border-color: var(--danger) !important; }
 
 .inventory-table { border-collapse: separate !important; border-spacing: 0 6px !important; }
 .inventory-table th {
@@ -111,11 +136,7 @@ body {
 .inventory-table tr td:last-child { border-right: 1px solid var(--border) !important; border-radius: 0 12px 12px 0 !important; }
 .inventory-table tr:hover td { background: #FFF8F5 !important; }
 
-.toolbar {
-  background: transparent !important;
-  border: none !important;
-  padding: 20px 0 !important;
-}
+.toolbar { background: transparent !important; border: none !important; padding: 20px 0 !important; }
 .search-box input {
   background: var(--card-bg) !important;
   border: 1px solid var(--border) !important;
@@ -127,11 +148,7 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
   transition: all 0.2s ease !important;
 }
-.search-box input:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(224, 122, 95, 0.1) !important;
-  outline: none !important;
-}
+.search-box input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(224, 122, 95, 0.1) !important; outline: none !important; }
 .search-box input::placeholder { color: var(--text-muted) !important; }
 .filter-group select {
   background: var(--card-bg) !important;

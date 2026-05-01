@@ -1,18 +1,64 @@
 # skill: button-primary
-# depends: none
-# prohibit: none
 
-[html]
-<button class="btn-primary" onclick="">{label}</button>
+## Contract
+- **語義承諾**: 渲染一個具主題風格的單一動作按鈕元件
+- **輸入資料格式**: `{ label: string, onClick?: function, disabled?: boolean }`
+- **輸出語義**: HTML `<button>` 元素，帶有 primary 視覺樣式
+- **操作邊界**:
+  - ✅ 做：渲染帶標籤的按鈕、處理點擊事件、支援 hover/disabled 視覺狀態
+  - ❌ 不做：處理表單提交、管理按鈕外部狀態、網路請求
+- **失敗信號**:
+  - `label` 為空 → 渲染無文字按鈕（但仍合約有效）
+  - `onClick` 非函式 → 忽略不報錯
 
-[react]
-const ButtonPrimary = ({ label, onClick }) => (
-  <button className="btn-primary" onClick={onClick}>
+## Dependencies
+- **依賴**: 無
+- **可選依賴**: 無
+- **排斥**: 無
+
+## Slots
+- **slot:label**: 按鈕文字內容，由 parent 或 Composer 注入
+
+## Boundaries
+- **系統邊界**: Presentation Layer（只處理 UI 渲染，不管資料或商業邏輯）
+- **操作邊界**:
+  - ✅ 操作：DOM 渲染、點擊事件、視覺狀態切換（hover、disabled）
+  - ❌ 不操作：localStorage、網路請求、函式級變數
+- **狀態邊界**: Stateless（接收 props，無內部狀態）
+
+## Examples
+
+### 基本用法
+**輸入**：
+```json
+{ "label": "確認送出", "onClick": () => console.log("clicked") }
+```
+**輸出**：
+```html
+<button class="btn-primary" onclick="...">確認送出</button>
+```
+
+### 禁用狀態
+**輸入**：
+```json
+{ "label": "處理中", "disabled": true }
+```
+**輸出**：
+```html
+<button class="btn-primary" disabled>處理中</button>
+```
+
+### React 元件
+```jsx
+const ButtonPrimary = ({ label, onClick, disabled }) => (
+  <button className="btn-primary" onClick={onClick} disabled={disabled}>
     {label}
   </button>
 );
+```
 
-[style]
+### 樣式定義
+```css
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -29,3 +75,4 @@ const ButtonPrimary = ({ label, onClick }) => (
 }
 .btn-primary:hover { background: #2563eb; }
 .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+```

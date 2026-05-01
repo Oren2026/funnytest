@@ -1,0 +1,165 @@
+# skill: alert-banner
+
+## Contract
+- **語義承諾**: 渲染一個具主題風格的提示橫幅元件
+- **輸入資料格式**: `{ message: string, type?: 'info' | 'success' | 'warning' | 'error', dismissible?: boolean, onDismiss?: function }`
+- **輸出語義**: HTML `<div>` 元素，帶有 type 視覺樣式與可選關閉按鈕
+- **操作邊界**:
+  - ✅ 做：渲染帶訊息的橫幅、支援四種类型、處理可關閉互動、支援 hover/active 視覺狀態
+  - ❌ 不做：自動關閉計時、管理外部狀態、網路請求
+- **失敗信號**:
+  - `message` 為空 → 渲染空橫幅（但仍合約有效）
+  - `type` 非有效值 → 預設為 'info'
+  - `onDismiss` 非函式 → 忽略不報錯
+
+## Dependencies
+- **依賴**: 無
+- **可選依賴**: 無
+- **排斥**: 無
+
+## Slots
+- **slot:message**: 橫幅訊息內容，由 parent 或 Composer 注入
+
+## Boundaries
+- **系統邊界**: Presentation Layer（只處理 UI 渲染，不管資料或商業邏輯）
+- **操作邊界**:
+  - ✅ 操作：DOM 渲染、關閉事件、視覺狀態切換（hover、active）
+  - ❌ 不操作：localStorage、網路請求、計時器、函式級變數
+- **狀態邊界**: Stateless（接收 props，無內部狀態）
+
+## Examples
+
+### 基本用法（Info）
+**輸入**：
+```json
+{ "message": "系統將於今晚 10 點進行維護", "type": "info" }
+```
+**輸出**：
+```html
+<div class="alert-banner alert-info">
+  <span class="alert-message">系統將於今晚 10 點進行維護</span>
+</div>
+```
+
+### 成功狀態
+**輸入**：
+```json
+{ "message": "更新成功！", "type": "success" }
+```
+**輸出**：
+```html
+<div class="alert-banner alert-success">
+  <span class="alert-message">更新成功！</span>
+</div>
+```
+
+### 警告狀態
+**輸入**：
+```json
+{ "message": "請注意：您的密碼將於 30 天後過期", "type": "warning" }
+```
+**輸出**：
+```html
+<div class="alert-banner alert-warning">
+  <span class="alert-message">請注意：您的密碼將於 30 天後過期</span>
+</div>
+```
+
+### 錯誤狀態
+**輸入**：
+```json
+{ "message": "網路連線失敗，請稍後再試", "type": "error" }
+```
+**輸出**：
+```html
+<div class="alert-banner alert-error">
+  <span class="alert-message">網路連線失敗，請稍後再試</span>
+</div>
+```
+
+### 可關閉橫幅
+**輸入**：
+```json
+{ "message": "優惠券即將過期", "type": "warning", "dismissible": true, "onDismiss": () => console.log("dismissed") }
+```
+**輸出**：
+```html
+<div class="alert-banner alert-warning alert-dismissible">
+  <span class="alert-message">優惠券即將過期</span>
+  <button class="alert-close" onclick="..." aria-label="關閉">×</button>
+</div>
+```
+
+### React 元件
+```jsx
+const AlertBanner = ({ message, type = 'info', dismissible = false, onDismiss }) => (
+  <div className={`alert-banner alert-${type}${dismissible ? ' alert-dismissible' : ''}`}>
+    <span className="alert-message">{message}</span>
+    {dismissible && (
+      <button className="alert-close" onClick={onDismiss} aria-label="關閉">
+        ×
+      </button>
+    )}
+  </div>
+);
+```
+
+### 樣式定義
+```css
+.alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: default;
+}
+
+.alert-info {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.alert-success {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.alert-warning {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.alert-error {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.alert-dismissible {
+  cursor: pointer;
+}
+
+.alert-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.alert-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+```
