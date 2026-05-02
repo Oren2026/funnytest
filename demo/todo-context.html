@@ -21,18 +21,6 @@
 }
 .btn-danger:hover { background: #fef2f2; border-color: #f87171; }
 
-.warehouse-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: #1a1a2e;
-  color: #fff;
-  border-bottom: 1px solid #16213e;
-}
-.header-title { font-size: 20px; font-weight: 600; }
-.header-actions { display: flex; gap: 8px; }
-
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.5);
@@ -290,16 +278,30 @@ body {
     </div>
     <form id="inventory-form" class="modal-form">      <input type="hidden" id="edit-id" />
       <div class="form-group">
-        <label>標題</label>
-        <input type="text" id="field-title" />
+        <label>任務名稱</label>
+        <input type="text" id="field-title" placeholder="請輸入任務" />
       </div>
       <div class="form-group">
-        <label>截止日期</label>
+        <label>描述</label>
         <input type="text" id="field-description" />
       </div>
       <div class="form-group">
         <label>優先權</label>
-        <input type="text" id="field-description" />
+        <select id="field-priority">
+          <option value="">請選擇</option>
+          <option value="高">高</option>          <option value="中">中</option>          <option value="低">低</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>狀態</label>
+        <select id="field-status">
+          <option value="">請選擇</option>
+          <option value="待處理">待處理</option>          <option value="進行中">進行中</option>          <option value="已完成">已完成</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>截止日期</label>
+        <input type="date" id="field-dueDate" />
       </div>
       <div class="form-actions">
         <button type="button" class="btn-cancel" onclick="closeModal()">取消</button>
@@ -350,7 +352,9 @@ function openAdd() {
   document.getElementById('edit-id').value = '';
   document.getElementById('field-title').value = '';
   document.getElementById('field-description').value = '';
-  document.getElementById('field-description').value = '';
+  document.getElementById('field-priority').value = '';
+  document.getElementById('field-status').value = '';
+  document.getElementById('field-dueDate').value = '';
   document.getElementById('form-modal').style.display = 'flex';
 }
 
@@ -361,7 +365,9 @@ function openEdit(id) {
   document.getElementById('edit-id').value = id;
   document.getElementById('field-title').value = item.title || '';
   document.getElementById('field-description').value = item.description || '';
-  document.getElementById('field-description').value = item.description || '';
+  document.getElementById('field-priority').value = item.priority || '';
+  document.getElementById('field-status').value = item.status || '';
+  document.getElementById('field-dueDate').value = item.dueDate || '';
   document.getElementById('form-modal').style.display = 'flex';
 }
 
@@ -441,7 +447,9 @@ document.getElementById('inventory-form').addEventListener('submit', function(e)
   var data = {
     title: document.getElementById('field-title').value.trim(),
     description: document.getElementById('field-description').value.trim(),
-    description: document.getElementById('field-description').value.trim(),
+    priority: document.getElementById('field-priority').value,
+    status: document.getElementById('field-status').value,
+    dueDate: document.getElementById('field-dueDate').value,
   };
   var editId = document.getElementById('edit-id').value;
   if (editId) {
@@ -480,7 +488,7 @@ function render() {
     var cmp = va < vb ? -1 : va > vb ? 1 : 0;
     return dir === 'asc' ? cmp : -cmp;
   });
-  var schemaFields = [{ name: "title", type: "text" }, { name: "description", type: "text" }, { name: "description", type: "text" }, { name: "id", type: "text" }, { name: "createdAt", type: "date" }, { name: "updatedAt", type: "date" }, { name: "actions", type: "action" }];
+  var schemaFields = [{ name: "title", type: "text" }, { name: "description", type: "text" }, { name: "priority", type: "badge" }, { name: "status", type: "badge" }, { name: "dueDate", type: "date" }, { name: "id", type: "text" }, { name: "createdAt", type: "date" }, { name: "updatedAt", type: "date" }, { name: "actions", type: "action" }];
   tbody.innerHTML = items.map(function(item) {
     var completed = item.completed ? ' todo-completed' : '';
     var cells = [];
@@ -490,7 +498,9 @@ function render() {
       switch (col.name) {
     case "title": return `<td>${item.title}</td>`;
     case "description": return `<td>${item.description}</td>`;
-    case "description": return `<td>${item.description}</td>`;
+    case "priority": return _renderBadge(item.priority, item);
+    case "status": return _renderBadge(item.status, item);
+    case "dueDate": return `<td class="col-date">${item.dueDate}</td>`;
     case "id": return `<td>${item.id}</td>`;
     case "createdAt": return `<td class="col-date">${item.createdAt}</td>`;
     case "updatedAt": return `<td class="col-date">${item.updatedAt}</td>`;
