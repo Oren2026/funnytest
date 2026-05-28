@@ -17,6 +17,7 @@ pub mod model;
 pub mod storage;
 pub mod evo;
 pub mod planner;
+pub mod compiler;
 
 // ===== 公開主要類型 =====
 
