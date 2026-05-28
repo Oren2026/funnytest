@@ -54,21 +54,31 @@ impl SystemReport {
     }
 
     pub fn ollama() -> Self {
-        let output = Command::new("ollama").arg("--version").output();
+        // 先檢查 which，成功就用
+        let output = Command::new("which").arg("ollama").output();
         let status = match output {
             Ok(out) if out.status.success() => {
                 let version = String::from_utf8_lossy(&out.stdout).trim().to_string();
                 CheckStatus::Installed(version)
             }
             _ => {
-                let curl = Command::new("curl")
-                    .args(["-s", "-m", "2", "http://localhost:11434/api/tags"])
-                    .output();
-                match curl {
-                    Ok(out) if out.status.success() => {
-                        CheckStatus::Installed("running (localhost:11434)".to_string())
+                // 嘗試常見安裝路徑
+                let paths = ["/usr/local/bin/ollama", "/opt/homebrew/bin/ollama"];
+                let found = paths.iter().find(|p| std::fs::metadata(p).is_ok());
+                match found {
+                    Some(p) => CheckStatus::Installed(p.to_string()),
+                    None => {
+                        // 最後 fallback: 試 curl 本地服務
+                        let curl = Command::new("curl")
+                            .args(["-s", "-m", "2", "http://localhost:11434/api/tags"])
+                            .output();
+                        match curl {
+                            Ok(out) if out.status.success() => {
+                                CheckStatus::Installed("running (localhost:11434)".to_string())
+                            }
+                            _ => CheckStatus::Missing,
+                        }
                     }
-                    _ => CheckStatus::Missing,
                 }
             }
         };
@@ -78,17 +88,31 @@ impl SystemReport {
     }
 
     pub fn llama3() -> Self {
-        let output = Command::new("ollama").arg("list").output();
-        let status = match output {
-            Ok(out) if out.status.success() => {
-                let stdout = String::from_utf8_lossy(&out.stdout);
-                if stdout.contains("llama3") {
-                    CheckStatus::Installed("llama3".to_string())
-                } else {
-                    CheckStatus::Missing
+        // try /usr/local/bin/ollama directly since it's not in PATH
+        let ollama_bin = if std::fs::metadata("/usr/local/bin/ollama").is_ok() {
+            Some("/usr/local/bin/ollama")
+        } else if std::fs::metadata("/opt/homebrew/bin/ollama").is_ok() {
+            Some("/opt/homebrew/bin/ollama")
+        } else {
+            None
+        };
+
+        let status = match ollama_bin {
+            Some(path) => {
+                let output = Command::new(path).arg("list").output();
+                match output {
+                    Ok(out) if out.status.success() => {
+                        let stdout = String::from_utf8_lossy(&out.stdout);
+                        if stdout.contains("llama3") {
+                            CheckStatus::Installed("llama3".to_string())
+                        } else {
+                            CheckStatus::Missing
+                        }
+                    }
+                    _ => CheckStatus::Missing,
                 }
             }
-            _ => CheckStatus::Missing,
+            None => CheckStatus::Missing,
         };
         Self {
             items: vec![CheckItem::new("llama3 model", status)],

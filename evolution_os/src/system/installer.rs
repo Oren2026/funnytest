@@ -101,8 +101,20 @@ impl Installer {
     }
 
     pub(crate) fn is_ollama_installed() -> bool {
-        // 檢查命令
-        if Command::new("ollama").arg("--version").output().map(|o| o.status.success()).unwrap_or(false) {
+        // 先嘗試 which
+        if Command::new("which")
+            .arg("ollama")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return true;
+        }
+        // 或檢查常見路徑
+        if std::fs::metadata("/usr/local/bin/ollama").is_ok() {
+            return true;
+        }
+        if std::fs::metadata("/opt/homebrew/bin/ollama").is_ok() {
             return true;
         }
         // 或檢查本地服務
@@ -148,21 +160,36 @@ impl Installer {
     }
 
     pub(crate) fn is_llama3_installed() -> bool {
-        Command::new("ollama")
-            .arg("list")
-            .output()
-            .map(|o| {
-                o.status.success() && String::from_utf8_lossy(&o.stdout).contains("llama3")
-            })
-            .unwrap_or(false)
+        let ollama_bin = if std::fs::metadata("/usr/local/bin/ollama").is_ok() {
+            Some("/usr/local/bin/ollama")
+        } else if std::fs::metadata("/opt/homebrew/bin/ollama").is_ok() {
+            Some("/opt/homebrew/bin/ollama")
+        } else if Command::new("which").arg("ollama").output().map(|o| o.status.success()).unwrap_or(false) {
+            Some("ollama")
+        } else {
+            None
+        };
+
+        match ollama_bin {
+            Some(path) => Command::new(path)
+                .arg("list")
+                .output()
+                .map(|o| o.status.success() && String::from_utf8_lossy(&o.stdout).contains("llama3"))
+                .unwrap_or(false),
+            None => false,
+        }
     }
 
     fn pull_llama3(&self) -> bool {
         self.stage("   執行: ollama pull llama3");
-        // ollama pull 是互動式的，用 expect 或 timeout 包裝
-        let output = Command::new("ollama")
-            .args(["pull", "llama3"])
-            .output();
+        let ollama_bin = if std::fs::metadata("/usr/local/bin/ollama").is_ok() {
+            "/usr/local/bin/ollama"
+        } else if std::fs::metadata("/opt/homebrew/bin/ollama").is_ok() {
+            "/opt/homebrew/bin/ollama"
+        } else {
+            "ollama"
+        };
+        let output = Command::new(ollama_bin).args(["pull", "llama3"]).output();
 
         match output {
             Ok(o) => {
@@ -170,8 +197,7 @@ impl Installer {
                     self.stage("   ✅ llama3 模型拉取完成");
                     true
                 } else {
-                    let stderr = String::from_utf8_lossy(&o.stderr);
-                    // pull 被中斷不一定算失敗，檢查是否真的有模型
+                    let _stderr = String::from_utf8_lossy(&o.stderr);
                     Self::is_llama3_installed()
                 }
             }
