@@ -181,30 +181,94 @@ impl Installer {
     }
 
     fn pull_llama3(&self) -> bool {
+        let ollama_bin = Self::find_ollama_bin();
         self.stage("   執行: ollama pull llama3");
-        let ollama_bin = if std::fs::metadata("/usr/local/bin/ollama").is_ok() {
-            "/usr/local/bin/ollama"
-        } else if std::fs::metadata("/opt/homebrew/bin/ollama").is_ok() {
-            "/opt/homebrew/bin/ollama"
-        } else {
-            "ollama"
-        };
-        let output = Command::new(ollama_bin).args(["pull", "llama3"]).output();
+        self.stage("   下載進度（首次需 4-5 分鐘，請耐心等待）...\n");
 
-        match output {
-            Ok(o) => {
-                if o.status.success() {
-                    self.stage("   ✅ llama3 模型拉取完成");
+        // streaming pull，这样用户能看到下載進度
+        let mut child = match Command::new(ollama_bin)
+            .args(["pull", "llama3"])
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("   ❌ 無法啟動 ollama pull: {}", e);
+                return false;
+            }
+        };
+
+        // 讀取 stdout + stderr 並即時列印
+        let stdout = child.stdout.take();
+        let stderr = child.stderr.take();
+
+        // 用一個執行緒讀 stdout，另一個讀 stderr
+        let stdout_handle = stdout.map(|mut io| {
+            std::thread::spawn(move || {
+                use std::io::{BufRead, BufReader};
+                let reader = BufReader::new(io);
+                for line in reader.lines().map_while(Result::ok) {
+                    // 顯示进度行
+                    if !line.trim().is_empty() {
+                        println!("   {}", line);
+                    }
+                }
+            })
+        });
+
+        let stderr_handle = stderr.map(|mut io| {
+            std::thread::spawn(move || {
+                use std::io::{BufRead, BufReader};
+                let reader = BufReader::new(io);
+                for line in reader.lines().map_while(Result::ok) {
+                    if !line.trim().is_empty() {
+                        eprintln!("   [stderr] {}", line);
+                    }
+                }
+            })
+        });
+
+        // 等待 child 結束
+        let status = child.wait();
+
+        // 等待 stdout/stderr 執行緒结束
+        if let Some(h) = stdout_handle {
+            let _ = h.join();
+        }
+        if let Some(h) = stderr_handle {
+            let _ = h.join();
+        }
+
+        match status {
+            Ok(s) if s.success() => {
+                self.stage("   ✅ llama3 模型拉取完成");
+                true
+            }
+            Ok(s) => {
+                // pull 成功但 status 非0（可能是已存在）
+                if Self::is_llama3_installed() {
+                    self.stage("   ✅ llama3 模型已就緒");
                     true
                 } else {
-                    let _stderr = String::from_utf8_lossy(&o.stderr);
-                    Self::is_llama3_installed()
+                    eprintln!("   ❌ llama3 pull 返回非零狀態: {}", s);
+                    false
                 }
             }
             Err(e) => {
                 eprintln!("   ❌ ollama pull 執行失敗: {}", e);
                 false
             }
+        }
+    }
+
+    fn find_ollama_bin() -> &'static str {
+        if std::fs::metadata("/usr/local/bin/ollama").is_ok() {
+            "/usr/local/bin/ollama"
+        } else if std::fs::metadata("/opt/homebrew/bin/ollama").is_ok() {
+            "/opt/homebrew/bin/ollama"
+        } else {
+            "ollama"
         }
     }
 
