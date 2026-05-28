@@ -245,11 +245,9 @@ pub struct DispatchDecision {
 
 impl DispatchDecision {
     /// 根據複雜度指標和任務內容產生決策
-    pub fn from_task(task: &str) -> Self {
-        let metrics = ComplexityMetrics::estimate_from_task(task);
-        let mode = WorkMode::decide(&metrics);
-        let estimated_nodes = Self::estimate_nodes(&metrics, mode);
-        let domain_tags = Self::extract_domain_tags(task);
+    pub fn from_metrics(metrics: &ComplexityMetrics, domain_tags: Vec<String>) -> Self {
+        let mode = WorkMode::decide(metrics);
+        let estimated_nodes = Self::estimate_nodes(metrics, mode);
 
         let rationale = format!(
             "branches={}, diversity={}, complexity={:.2} → {}",
@@ -268,6 +266,13 @@ impl DispatchDecision {
             estimated_nodes,
             domain_tags,
         }
+    }
+
+    /// 從任務描述直接產生決策（使用規則估算，純文字分析）
+    pub fn from_task(task: &str) -> Self {
+        let metrics = ComplexityMetrics::estimate_from_task(task);
+        let domain_tags = Self::extract_domain_tags(task);
+        Self::from_metrics(&metrics, domain_tags)
     }
 
     fn estimate_nodes(metrics: &ComplexityMetrics, mode: WorkMode) -> u8 {

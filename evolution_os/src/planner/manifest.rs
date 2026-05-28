@@ -180,6 +180,14 @@ impl Manifest {
         let complexity = crate::planner::ComplexityMetrics::estimate_from_task(task);
 
         // Stage 3: 派工決策
+        #[cfg(feature = "llm")]
+        let dispatch = if use_llm {
+            DispatchDecision::from_metrics(&complexity, Self::extract_domain_tags_llm(task, backend, model))
+        } else {
+            DispatchDecision::from_task(task)
+        };
+
+        #[cfg(not(feature = "llm"))]
         let dispatch = DispatchDecision::from_task(task);
         let estimated_nodes = if dispatch.mode == WorkMode::Fork {
             Self::generate_estimated_nodes(&complexity, task)
@@ -399,6 +407,40 @@ impl Manifest {
             user,
             rationale: dispatch.rationale.clone(),
         }
+    }
+
+    /// 使用 LLM 從任務描述提取領域標籤
+    #[cfg(feature = "llm")]
+    fn extract_domain_tags_llm(
+        task: &str,
+        backend: Option<&dyn crate::model::ModelDispatcher>,
+        model: &str,
+    ) -> Vec<String> {
+        let prompt = format!(
+            r#"You are a domain classifier. Given this task, list the relevant domains as a JSON array of strings.
+Task: "{}"
+Output ONLY a JSON array like ["frontend", "backend", "database"], nothing else. If no specific domain, return []. Domains: frontend, backend, database, auth, devops, security, performance, testing."#,
+            task
+        );
+
+        let req = crate::model::ModelRequest::new(model, &prompt)
+            .with_temperature(0.1)
+            .with_max_tokens(100);
+
+        let resp = match backend.and_then(|b| b.dispatch(req).ok()) {
+            Some(r) => r.content,
+            None => return vec![],
+        };
+
+        // 從回應中提取 JSON 陣列
+        if let Ok(re) = regex::Regex::new(r"\[.*\]") {
+            if let Some(caps) = re.find(&resp) {
+                if let Ok(tags) = serde_json::from_str::<Vec<String>>(caps.as_str()) {
+                    return tags;
+                }
+            }
+        }
+        vec![]
     }
 
     /// 輸出為 JSON 字串

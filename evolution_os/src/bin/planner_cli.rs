@@ -39,7 +39,16 @@ fn main() {
 
     // --llm 模式
     let use_llm = args.get(1).map(|s| s == "--llm").unwrap_or(false);
-    let task_start = if use_llm { 2 } else { 1 };
+    // 任務：跳過 --llm(1)，若 args[2] 是 "--" 则从 3 开始，否则从 2 开始
+    let task_start = if use_llm {
+        if args.get(2).map(|s| s.as_str()) == Some("--") {
+            3
+        } else {
+            2
+        }
+    } else {
+        1
+    };
 
     // --interactive 模式
     if args.get(task_start).map(|s| s == "--interactive" || s == "-i").unwrap_or(false) {
