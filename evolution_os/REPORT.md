@@ -171,7 +171,7 @@ PlannerManifest 是Planner 的最終輸出，包含完整、可執行的規劃�
 
 - **語言**：Rust（stable toolchain, 2021 edition）
 - **編譯**：`cargo build --bin planner_cli`
-- **測試**：`cargo test`（88 單元測試 + 6 整合測試）
+- **測試**：`cargo test`（106 單元測試 + 6 整合測試，kernel 11 tests passed）
 - **平台**：macOS/Linux
 
 ### 4.2 核心模組
@@ -187,8 +187,8 @@ src/
 ├── runtime/           # 執行引擎（Executor、依賴排序）
 ├── model/             # AI 模型派遣（OllamaBackend）
 ├── skill/             # 技能實現（檔案處理、程式碼分析、LLM）
-├── chain/             # 呼叫鏈探索（BFS algorithm）
-└── storage/            # 持久化（JSON storage）
+├── kernel/            # OS System 核心（Process/Mailbox/Scheduler/ProcessTable/SysCall/SystemProcess）
+└── storage/          # 持久化（JSON storage）
 ```
 
 ### 4.3 Planner CLI 使用方式
@@ -221,7 +221,24 @@ cargo test
     ├─ test_node_count_estimate_reasonable
     ├─ test_simple_task_complexity_low
     └─ test_complex_task_domain_diversity_high
-```
+
+### 4.4 OS System 核心（v0.3.0 新增架構）
+
+Evolution OS 從「直線 Pipe」重構為「作業系統架構」：
+
+| 架構類型 | 說明 |
+|---------|------|
+| 直線 Pipe（舊） | Planner → Compiler → Executor，直接函式呼叫 |
+| OS Kernel（新） | 所有節點都是 Process，透過 `Kernel.syscall()` 互動 |
+
+核心模組：`kernel/`（7 個 .rs 檔案，共 ~1,000 行）
+- `mod.rs`: Kernel 本體，`syscall()` 單一進場點，422 行含 11 個測試
+- `process.rs`: Process / ProcessState / Pid（147 行）
+- `mailbox.rs`: FIFO 訊息佇列（57 行）
+- `process_table.rs`: index-based 行程表，PID=index（122 行）
+- `scheduler.rs`: FIFO 排程器（93 行）
+- `syscall.rs`: SysCallKind 枚舉（93 行）
+- `system_process.rs`: SystemProcess trait + NodeProcess + PlannerProcess（148 行）
 
 ---
 
@@ -262,7 +279,7 @@ $ cargo run --bin planner_cli -- "幫我建一個庫存管理系統，要有前�
 | 簡單任務 | `cargo run --bin planner_cli -- "寫一個計數器"` | Solo Mode |
 | 複雜任務 | `cargo run --bin planner_cli -- "庫存管理系統..."` | Fork Mode |
 | 互動模式 | `cargo run --bin planner_cli -- --interactive` | 多行輸入 |
-| 測試通過 | `cargo test` | 94 tests passed |
+| Kernel 測試 | `cargo test --lib` | 106 passed, 3 failed (pre-existing) |
 
 ### 6.2 文件展示
 

@@ -3,23 +3,46 @@
 //! 用法：
 //!   cargo run --bin planner -- "幫我建一個庫存管理系統"
 //!   cargo run --bin planner -- --interactive
+//!   cargo run --bin planner -- --llm -- "幫我建一個庫存管理系統"
 //!
 //! 輸出：JSON Manifest
 
 use evolution_os::planner::Manifest;
+#[cfg(feature = "llm")]
+use evolution_os::model::OllamaBackend;
 use std::env;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("用法: cargo run --bin planner -- <任務描述>");
-        eprintln!("       cargo run --bin planner -- --interactive");
+        print_help();
         std::process::exit(1);
     }
 
+    // --check 模式：只做系統檢查不安裝
+    if args.get(1).map(|s| s == "--check").unwrap_or(false) {
+        run_system_check();
+        return;
+    }
+
+    // --install 模式：檢查 + 自動安裝
+    if args.get(1).map(|s| s == "--install").unwrap_or(false) {
+        run_system_check();
+        println!();
+        run_auto_install();
+        return;
+    }
+
+    // Pre-flight check（無 --check flag 也做快速檢查，缺少時警告）
+    preflight_check();
+
+    // --llm 模式
+    let use_llm = args.get(1).map(|s| s == "--llm").unwrap_or(false);
+    let task_start = if use_llm { 2 } else { 1 };
+
     // --interactive 模式
-    if args[1] == "--interactive" || args[1] == "-i" {
+    if args.get(task_start).map(|s| s == "--interactive" || s == "-i").unwrap_or(false) {
         println!("📋 Evolution Planner — 互動模式");
         println!("輸入你的任務描述（空白行結束）：");
         let mut task = String::new();
@@ -41,24 +64,41 @@ fn main() {
             eprintln!("任務描述為空");
             std::process::exit(1);
         }
-        run_planner(&task);
+        run_planner(&task, use_llm);
         return;
     }
 
     // 直接模式：剩下的 args 組合成任務描述
-    let task = args[1..].join(" ");
+    let task = args[task_start..].join(" ");
     if task.trim().is_empty() {
         eprintln!("任務描述為空");
         std::process::exit(1);
     }
-    run_planner(&task);
+    run_planner(&task, use_llm);
 }
 
-fn run_planner(task: &str) {
+fn run_planner(task: &str, use_llm: bool) {
     println!("\n🔍 分析任務：{}\n", task);
     println!("{}", "=".repeat(60));
 
-    let manifest = Manifest::from_task(task);
+    #[cfg(feature = "llm")]
+    let manifest = if use_llm {
+        use evolution_os::model::OllamaBackend;
+        let backend = OllamaBackend::new();
+        println!("🤖 LLM 模式：使用 llama3 分析\n");
+        Manifest::from_task_with_llm(task, &backend)
+    } else {
+        Manifest::from_task(task)
+    };
+
+    #[cfg(not(feature = "llm"))]
+    let manifest = {
+        if use_llm {
+            println!("⚠️  尚未編譯 LLM 功能，使用規則模式。");
+            println!("   重新編譯：cargo build --features llm\n");
+        }
+        Manifest::from_task(task)
+    };
 
     // 輸出摘要
     println!("\n📊 複雜度指標");
@@ -113,5 +153,59 @@ fn run_planner(task: &str) {
     match manifest.to_json() {
         Ok(json) => println!("{}", json),
         Err(e) => eprintln!("JSON 輸出失敗：{}", e),
+    }
+}
+
+// ===== 系統檢查與安裝 =====
+
+fn print_help() {
+    eprintln!("Evolution Planner CLI");
+    eprintln!();
+    eprintln!("用法:");
+    eprintln!("  planner <任務描述>                      分析任務（規則模式）");
+    eprintln!("  planner --llm -- <任務描述>             分析任務（LLM 模式）");
+    eprintln!("  planner --check                         檢查系統環境");
+    eprintln!("  planner --install                      檢查並自動安裝缺少的元件");
+    eprintln!("  planner --interactive                   互動模式");
+    eprintln!();
+    eprintln!("範例:");
+    eprintln!("  planner --llm -- 幫我建一個庫存管理系統");
+    eprintln!("  planner --check");
+    eprintln!("  planner --install");
+}
+
+fn run_system_check() {
+    println!("🔍 系統環境檢查\n");
+    for report in evolution_os::system::SystemReport::all() {
+        report.print_summary();
+    }
+}
+
+fn preflight_check() {
+    let missing: Vec<(String, bool)> = evolution_os::system::Installer::quick_check();
+    let any_missing = missing.iter().any(|(_, present)| !present);
+
+    if any_missing {
+        println!("⚠️  系統檢查：發現缺少元件");
+        for (name, present) in &missing {
+            if !present {
+                println!("  ❌ {}", name);
+            }
+        }
+        println!();
+        println!("執行 `planner --install` 自動安裝，或手動安裝後再試。");
+        println!();
+    }
+}
+
+fn run_auto_install() {
+    println!("🚀 開始自動安裝...\n");
+    let installer = evolution_os::system::Installer::new();
+    let ok = installer.install_missing();
+    println!();
+    if ok {
+        println!("✅ 所有元件已就緒，任務規劃系統已準備好！");
+    } else {
+        println!("⚠️  部分元件安裝失敗，請參考上方錯誤訊息手動處理。");
     }
 }

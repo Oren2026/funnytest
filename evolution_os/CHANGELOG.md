@@ -6,6 +6,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.3.0] — 2026-05-28
+
+### Added
+
+- **`kernel` module** — OS System 核心（sync Rust，tokio-less）
+  - `mod.rs`: Kernel（本體）— `syscall()` 單一進場點，422 行含完整測試
+  - `process.rs`: Process / ProcessState / Pid（含 Debug impl，147 行）
+  - `mailbox.rs`: Mailbox（FIFO 訊息佇列，57 行）
+  - `process_table.rs`: ProcessTable（index-based，PID=index，122 行）
+  - `scheduler.rs`: Scheduler（FIFO，不遞迴 update，93 行）
+  - `syscall.rs`: SysCallKind（Spawn/Send/Receive/Wait/Exit，93 行）
+  - `system_process.rs`: SystemProcess trait + NodeProcess + PlannerProcess（148 行）
+
+- **kernel 測試**：11 tests passed，0 failures
+
+### Architecture Change
+
+- 從「直線 Pipe」重構為「OS 架構」：
+  - 直線 Pipe（旧）：Planner → Compiler → Executor，直接函式呼叫
+  - OS Kernel（新）：所有節點都是 Process，透過 `Kernel.syscall()` 互動
+
+### Fixed
+
+- `scheduler.rs`: `next()` 遞迴呼叫 `update()` 造成 retain twice — 加入 `sync_valid_pids()` 由 `Kernel.schedule()` 統一呼叫
+- `process_table.rs`: index 0 保留（無效 PID），`spawn()` 時使用 while loop 而非 resize
+- `kernel/mod.rs`: `do_receive()` 移除不必要的 `block_on()` 呼叫
+- `decision.rs`: `ComplexityMetrics` / `DispatchDecision` / `OptimizerPrompt` 加 `#[derive(Default)]`
+
+---
+
+## [0.2.0] — 2026-05-27
+
+### Added
+
+- **期末文件**：SPEC.md 規格書 + REPORT.md 報告 + CHANGELOG.md + VERSION_CONTROL.md
+- **系統架構圖**（ASCII）：Planner Stage Flow + Dispatch Decision 閾值判定樹 + 領域關鍵詞對照表
+- **期末展示大綱**：Demo 項目（終端指令）+ 文件展示清單
+
+---
+
 ## [0.1.0] — 2026-05-27
 
 ### Added
@@ -19,39 +59,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - 直接模式：`cargo run --bin planner_cli -- "<任務>"` → 終端分析報告 + JSON
   - 互動模式（`--interactive`）：多行輸入
 
-- **整合測試**
-  - `tests/planner_decision.rs`: decision.rs 整合測試（6 cases，驗證分工閾值）
+- **整合測試**：`tests/planner_decision.rs`（6 cases，驗證分工閾值）
 
 - **`VERSION_CONTROL.md`** — 版本控制規劃文件
-  - SemVer 命名規則
-  - Branch 模型（GitHub Flow）
-  - Commit Message 格式（Conventional Commits）
-  - CHANGELOG 維護流程
-  - 測試覆蓋率目標
-
-- **`CHANGELOG.md`** — 本文件
 
 ### Changed
 
-- `src/lib.rs`: 加入 `pub mod planner;` 和 `pub use planner::*;`
-
-- `Cargo.toml`: 新增 `chrono = "0.4"` dependency（manifest timestamp 使用）
-
-- **`planner/decision.rs`**
-  - 固定 array 类型标注（`[(&[&str], &str); N]`）修复 Rust 编译器对异质数组的推断
-  - `extract_domain_tags`: 补强 keyword 列表（database、frontend、backend、auth、devops、security、performance、testing）
-  - `count_domain_diversity`: 改用 `.iter()` 遍历避免 `&&str` 类型错误
+- `src/lib.rs`: 加入 `pub mod planner;`
+- `Cargo.toml`: 新增 `chrono = "0.4"` dependency
 
 ### Fixed
 
-- `planner/decision.rs`: `count_domain_diversity` 数组长度不一导致的 type inference 错误
-- `planner/decision.rs`: `extract_domain_tags` `&&str` not iterator 错误（改用 `.iter()`）
-- `planner/decision.rs`: `tech_terms` 变量名拼写错误（应为 `has_tech_terms`）
-- `planner_decision.rs`: 测试中 `frontend` tag 识别失败（新增 "網站/web/頁面" keyword）
-
-### Removed
-
-- （无）
+- `decision.rs`: `count_domain_diversity` 数组长度不一导致的 type inference 错误
+- `decision.rs`: `tech_terms` 变量名拼写错误
+- `planner_decision.rs`: `frontend` tag 识别失败（新增 "網站/web/頁面" keyword）
 
 ---
 

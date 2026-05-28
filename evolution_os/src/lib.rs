@@ -18,6 +18,8 @@ pub mod storage;
 pub mod evo;
 pub mod planner;
 pub mod compiler;
+pub mod kernel;
+pub mod system;
 
 // ===== 公開主要類型 =====
 

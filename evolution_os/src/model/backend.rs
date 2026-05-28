@@ -3,14 +3,12 @@
 //! 連接 `http://localhost:11434`，使用 `/api/generate` endpoint。
 
 use super::{DispatchError, ModelDispatcher, ModelRequest, ModelResponse};
-use std::io::{Read, Write};
-use std::net::TcpStream;
-use std::time::Duration;
 
 /// Ollama 後端實作
 pub struct OllamaBackend {
     base_url: String,
     timeout_secs: u64,
+    client: reqwest::blocking::Client,
 }
 
 impl OllamaBackend {
@@ -19,9 +17,14 @@ impl OllamaBackend {
     }
 
     pub fn with_url(url: &str) -> Self {
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(60))
+            .build()
+            .unwrap_or_else(|_| reqwest::blocking::Client::new());
         Self {
             base_url: url.trim_end_matches('/').to_string(),
             timeout_secs: 60,
+            client,
         }
     }
 
@@ -31,30 +34,7 @@ impl OllamaBackend {
     }
 
     fn send_request(&self, req: &ModelRequest) -> Result<String, DispatchError> {
-        let host = self.base_url.replace("http://", "").replace("https://", "");
-        let mut parts = host.split(':');
-        let host = parts.next().unwrap_or("localhost");
-        let port: u16 = parts
-            .next()
-            .and_then(|p| p.parse().ok())
-            .unwrap_or(11434);
-
-        // 嘗試 TCP 連線
-        let addr = format!("{}:{}", host, port);
-        let mut stream = TcpStream::connect_timeout(&addr.parse().map_err(|_| {
-            DispatchError::ConnectionError(format!("invalid address: {}", addr))
-        })?, Duration::from_secs(self.timeout_secs))
-            .map_err(|e| DispatchError::ConnectionError(e.to_string()))?;
-
-        stream
-            .set_read_timeout(Some(Duration::from_secs(self.timeout_secs)))
-            .ok();
-        stream
-            .set_write_timeout(Some(Duration::from_secs(self.timeout_secs)))
-            .ok();
-
-        // 建立 Ollama API 請求
-        let mut request_body = serde_json::json!({
+        let mut body = serde_json::json!({
             "model": req.model,
             "prompt": req.prompt,
             "stream": false,
@@ -64,65 +44,32 @@ impl OllamaBackend {
         });
 
         if let Some(ref system) = req.system_prompt {
-            request_body["system"] = serde_json::json!(system);
+            body["system"] = serde_json::json!(system);
         }
         if let Some(tokens) = req.max_tokens {
-            request_body["options"]["num_predict"] = serde_json::json!(tokens);
+            body["options"]["num_predict"] = serde_json::json!(tokens);
         }
 
-        let body_str = serde_json::to_string(&request_body)
-            .map_err(|e| DispatchError::BackendError(format!("failed to serialize: {}", e)))?;
+        let url = format!("{}/api/generate", self.base_url);
 
-        let request = format!(
-            "POST /api/generate HTTP/1.1\r\n\
-             Host: {}:{}\r\n\
-             Content-Type: application/json\r\n\
-             Content-Length: {}\r\n\
-             Connection: close\r\n\
-             \r\n\
-             {}",
-            host,
-            port,
-            body_str.len(),
-            body_str
-        );
-
-        stream
-            .write_all(request.as_bytes())
-            .map_err(|e| DispatchError::BackendError(format!("failed to send: {}", e)))?;
-
-        let mut reading_body = false;
-        let mut body = Vec::new();
-
-        // 讀取 HTTP 回應（簡單的行式讀取）
-        let mut buf = [0u8; 4096];
-        loop {
-            match stream.read(&mut buf) {
-                Ok(0) => break,
-                Ok(n) => {
-                    let chunk = String::from_utf8_lossy(&buf[..n]);
-                    for line in chunk.lines() {
-                        if reading_body {
-                            body.extend_from_slice(line.as_bytes());
-                        } else if line.is_empty() {
-                            reading_body = true;
-                        }
-                    }
+        let resp = self
+            .client
+            .post(&url)
+            .json(&body)
+            .send()
+            .map_err(|e| {
+                if e.is_connect() {
+                    DispatchError::ConnectionError(e.to_string())
+                } else if e.is_timeout() {
+                    DispatchError::Timeout
+                } else {
+                    DispatchError::BackendError(e.to_string())
                 }
-                Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
-                    return Err(DispatchError::Timeout);
-                }
-                Err(e) => {
-                    return Err(DispatchError::BackendError(format!("read error: {}", e)));
-                }
-            }
-        }
-
-        // 嘗試解析 Ollama 的 JSON 回應
-        let json: serde_json::Value =
-            serde_json::from_slice(&body).map_err(|e| {
-                DispatchError::BackendError(format!("failed to parse response: {} (first 200 bytes: {:?})", e, String::from_utf8_lossy(&body[..body.len().min(200)])))
             })?;
+
+        let json: serde_json::Value =
+            resp.json()
+                .map_err(|e| DispatchError::BackendError(format!("failed to parse response: {}", e)))?;
 
         if let Some(err_msg) = json.get("error").and_then(|e| e.as_str()) {
             if err_msg.contains("model not found") || err_msg.contains("no such file") {
@@ -143,7 +90,6 @@ impl OllamaBackend {
             .unwrap_or(&req.model)
             .to_string();
 
-        // tokens_used 可能在 total_duration 或其他欄位估算
         let tokens_used = json
             .get("eval_count")
             .and_then(|c| c.as_u64())
@@ -159,9 +105,14 @@ impl OllamaBackend {
 
 impl Default for OllamaBackend {
     fn default() -> Self {
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(60))
+            .build()
+            .unwrap_or_else(|_| reqwest::blocking::Client::new());
         Self {
             base_url: "http://localhost:11434".to_string(),
             timeout_secs: 60,
+            client,
         }
     }
 }
@@ -177,67 +128,18 @@ impl ModelDispatcher for OllamaBackend {
     }
 
     fn available_models(&self) -> Vec<String> {
-        // 嘗試讀取 /api/tags
-        let host = self
-            .base_url
-            .replace("http://", "")
-            .replace("https://", "");
-        let mut parts = host.split(':');
-        let host_part = parts.next().unwrap_or("localhost");
-        let port: u16 = parts
-            .next()
-            .and_then(|p| p.parse().ok())
-            .unwrap_or(11434);
-
-        let addr = format!("{}:{}", host_part, port);
-        let Ok(addr_parsed) = addr.parse() else {
+        let url = format!("{}/api/tags", self.base_url);
+        let Ok(resp) = self
+            .client
+            .get(&url)
+            .timeout(std::time::Duration::from_secs(5))
+            .send()
+        else {
             return vec![];
         };
-        let Ok(mut stream) = TcpStream::connect_timeout(&addr_parsed, Duration::from_secs(2)) else {
+        let Ok(json) = resp.json::<serde_json::Value>() else {
             return vec![];
         };
-
-        let request = format!(
-            "GET /api/tags HTTP/1.1\r\n\
-             Host: {}:{}\r\n\
-             Connection: close\r\n\
-             \r\n",
-            host_part, port
-        );
-
-        if stream.write_all(request.as_bytes()).is_err() {
-            return vec![];
-        }
-
-        let mut body = Vec::new();
-        let mut reading_body = false;
-        let mut buf = [0u8; 1024];
-
-        let timeout = std::time::Duration::from_secs(2);
-        let _ = stream.set_read_timeout(Some(timeout));
-
-        loop {
-            match stream.read(&mut buf) {
-                Ok(0) => break,
-                Ok(n) => {
-                    let chunk = String::from_utf8_lossy(&buf[..n]);
-                    for line in chunk.lines() {
-                        if reading_body {
-                            body.extend_from_slice(line.as_bytes());
-                        } else if line.is_empty() {
-                            reading_body = true;
-                        }
-                    }
-                }
-                Err(_) => break,
-            }
-        }
-
-        let json: serde_json::Value = match serde_json::from_slice(&body) {
-            Ok(v) => v,
-            Err(_) => return vec![],
-        };
-
         json.get("models")
             .and_then(|m| m.as_array())
             .map(|arr| {

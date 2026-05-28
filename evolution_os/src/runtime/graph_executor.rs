@@ -139,7 +139,32 @@ mod tests {
         graph.add_node(DummyNode { id: "a".into(), deps: vec![] });
         graph.add_node(DummyNode { id: "b".into(), deps: vec!["a".into()] });
 
-        let manifest = Manifest::from_task("test");
+        // Build manifest with estimated_nodes so ExecutionGraph has nodes
+        let manifest = {
+            use crate::planner::manifest::Manifest;
+            use crate::planner::stages::Stage;
+            Manifest {
+                version: "0.1.0".to_string(),
+                task: "test".to_string(),
+                created_at: "2026-01-01T00:00:00Z".to_string(),
+                stage: Stage::Complete,
+                requirements: vec![],
+                questions: vec![],
+                converged: true,
+                complexity: Default::default(),
+                estimated_nodes: vec![
+                    crate::planner::manifest::EstimatedNode {
+                        id: "a".into(), role: "r".into(), handles: vec![], depends_on: vec![],
+                    },
+                    crate::planner::manifest::EstimatedNode {
+                        id: "b".into(), role: "r".into(), handles: vec![], depends_on: vec!["a".into()],
+                    },
+                ],
+                work_mode: Default::default(),
+                dispatch: Default::default(),
+                optimized_prompt: Default::default(),
+            }
+        };
         let exec_graph = ExecutionGraph::from_manifest(&manifest).unwrap();
 
         let results = exec.execute(&mut graph, &exec_graph);

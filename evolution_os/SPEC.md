@@ -1,8 +1,8 @@
 # Evolution OS — 系統規格書
 # Evolution Compiler — 軟體工程Framework
 
-**版本**: v0.2.0 (DRAFT)
-**日期**: 2026-05-27
+**版本**: v0.3.0 (DRAFT)
+**日期**: 2026-05-28
 **類型**: 學期專案成果文件
 
 ---
@@ -266,9 +266,121 @@ fn estimate_nodes(metrics: &ComplexityMetrics, mode: WorkMode) -> u8 {
 
 ---
 
-## 4. 模組結構
+## 4. OS System 核心（v0.3.0 新增）
 
-### 4.1 代碼模組（src/）
+### 4.1 設計目標
+
+將 Evolution OS 從「直線 Pipe」重構為「作業系統架構」：
+
+| 架構類型 | 說明 |
+|---------|------|
+| **直線 Pipe（舊）** | Planner → Compiler → Executor，直接函式呼叫，無狀態管理 |
+| **OS Kernel（新）** | 所有節點都是 Process，透過 `Kernel.syscall()` 互動，有獨立生命周期 |
+
+### 4.2 核心元件
+
+```
+kernel/
+├── mod.rs              # Kernel（本體）— syscall() 單一進場點
+├── process.rs          # Process / ProcessState / Pid（含 Debug impl）
+├── mailbox.rs          # Mailbox（FIFO 訊息佇列）
+├── process_table.rs    # ProcessTable（index-based，PID=index）
+├── scheduler.rs        # Scheduler（FIFO 排程，不遞迴 update）
+├── syscall.rs          # SysCallKind（Spawn/Send/Receive/Wait/Exit）
+└── system_process.rs  # SystemProcess trait（Node 包裝介面）
+```
+
+### 4.3 Process 狀態機
+
+```
+                    ┌───────┐
+   spawn() ──▶     │ Ready │
+                    └───┬───┘
+                        │ scheduler 選中
+                        ▼
+                  ┌───────────┐
+                  │ Running   │───▶ exit() ──▶ Zombie
+                  └───────────┘
+                        │
+                   yield() ◀──┘
+                        │
+                        ▼
+                  ┌───────────┐
+                  │ Waiting   │◀──── wait(Pid)
+                  └───────────┘
+```
+
+### 4.4 System Call 介面
+
+所有行程透過 `Kernel::syscall()` 與核心互動：
+
+```rust
+pub enum SysCallKind {
+    Spawn(Box<dyn SystemProcess>),    // 創建新行程
+    Send { to: Pid, msg: String },   // 發送訊息
+    Receive,                          // 接收訊息（blocking）
+    Wait(Pid),                        // 等待指定行程結束
+    Exit,                             // 行程結束
+}
+```
+
+### 4.5 ProcessTable 設計
+
+- **index = PID**：index 0 保留（無效 PID），PID 1 → `processes[1]`
+- `spawn()`：分配新 PID，process 加入 Vec，状态设为 Ready
+- `state()`：給定 PID，回傳 `ProcessState`
+
+### 4.6 Scheduler 設計
+
+- **FIFO 輪轉**：依序取出第一個 Ready 的 PID
+- `sync_valid_pids()`：由 `Kernel.schedule()` 統一呼叫，移除已終止行程
+- `next()`：**不遞迴呼叫** `update()`，只做 retain + pop_front
+
+### 4.7 SystemProcess trait
+
+行程包裝介面，讓 Node/Skill 可以作為 OS Process 運行：
+
+```rust
+pub trait SystemProcess: Send + Sync {
+    fn name(&self) -> &str;
+    fn tick(&mut self, kernel: &Kernel) -> ProcessResult;
+    fn on_syscall(&mut self, call: SysCallKind, kernel: &Kernel) -> ProcessResult;
+}
+```
+
+- `NodeProcess`：將現有 Node 封裝為行程
+- `PlannerProcess`：將 Planner 封裝為行程
+
+### 4.8 Planner → Kernel → Executor 整合
+
+```
+ PlannerManifest
+      │
+      ▼ spawn(PlannerProcess)
+ ┌─────────┐     syscall(Spawn)      ┌─────────────┐
+ │ Kernel  │ ──────────────────────▶ │ Planner PID=1│
+ └─────────┘                        └─────────────┘
+      │                                   │
+      │  syscall(Send, node-frontend)     │
+      ▼                                   │
+ ┌─────────┐                              │
+ │Executor │◀─── on_syscall ──────────────┘
+ │ PID=2   │
+ └─────────┘
+```
+
+### 4.9 測試結果
+
+```
+11 passed; 0 failed (kernel module)
+106 passed; 3 failed (全體 — pre-existing failures, 與 kernel 無關)
+```
+
+---
+
+## 5. 模組結構
+
+### 5.1 代碼模組（src/）
 
 | 模組 | 檔案 | 職責 |
 |------|------|------|
@@ -281,10 +393,11 @@ fn estimate_nodes(metrics: &ComplexityMetrics, mode: WorkMode) -> u8 {
 | `runtime` | `executor.rs` | 依賴排序執行、Executor |
 | `model` | `dispatcher.rs` | AI 模型派遣（Ollama 支援） |
 | `skill` | `filesystem.rs` | 技能實現（檔案、LLM、系統分析） |
+| `kernel` | `mod.rs` + 附檔 | OS 系統核心：Process / Mailbox / Scheduler / ProcessTable / SysCall / SystemProcess |
 | `storage` | `json_storage.rs` | Graph 持久化（JSON） |
 | `chain` | `discovery.rs` | 呼叫鏈探索（葉→根 BFS） |
 
-### 4.2 Planner CLI（src/bin/planner_cli.rs）
+### 5.2 Planner CLI（src/bin/planner_cli.rs）
 
 兩種使用模式：
 
@@ -300,7 +413,7 @@ cargo run --bin planner_cli -- --interactive
 - 終端摘要（複雜度指標、分工模式、需求項目）
 - 完整 JSON Manifest
 
-### 4.3 測試結構
+### 5.3 測試結構
 
 ```
 tests/
@@ -318,15 +431,15 @@ src/planner/decision.rs     內建單元測試（4 cases）
 
 ---
 
-## 5. 輸入輸出範例
+## 6. 輸入輸出範例
 
-### 5.1 輸入
+### 6.1 輸入
 
 ```
 幫我建一個庫存管理系統，要有前端、後端、資料庫、登入功能
 ```
 
-### 5.2 PlannerManifest（JSON 輸出摘要）
+### 6.2 PlannerManifest（JSON 輸出摘要）
 
 ```json
 {
@@ -368,9 +481,9 @@ src/planner/decision.rs     內建單元測試（4 cases）
 
 ---
 
-## 6. 期末展示大綱
+## 7. 期末展示大綱
 
-### 6.1 Demo 項目（終端展示）
+### 7.1 Demo 項目（終端展示）
 
 ```bash
 # 1. Planner 分工決策展示
@@ -387,7 +500,7 @@ cargo run --bin planner_cli -- "寫一個計數器網頁"   # Solo
 cargo run --bin planner_cli -- "幫我建一個庫存管理系統"  # Fork
 ```
 
-### 6.2 預期展現的能力
+### 7.2 預期展現的能力
 
 1. **可讀的分析報告**：終端直接顯示分工人推薦理由
 2. **結構化 JSON 輸出**：可直接交給下層系統執行
@@ -396,16 +509,17 @@ cargo run --bin planner_cli -- "幫我建一個庫存管理系統"  # Fork
 
 ---
 
-## 7. 版本歷程
+## 8. 版本歷程
 
 | 版本 | 日期 | 內容 |
 |------|------|------|
+| v0.3.0 | 2026-05-28 | OS System 核心：kernel module（Process/Mailbox/Scheduler/ProcessTable/SysCall/SystemProcess），sync Rust，11 tests passed |
+| v0.2.0 | 2026-05-27 | 期末文件：SPEC.md 規格書 + REPORT.md 報告 + CHANGELOG.md + VERSION_CONTROL.md |
 | v0.1.0 | 2026-05-27 | Planner 核心：stages + decision + manifest + CLI + 整合測試 |
-| v0.0.0 | 2026-05-?? | 初始化：node + chain + skill + runtime + model + storage + evo |
 
 ---
 
-## 8. 設計原則與擴展方向
+## 9. 設計原則與擴展方向
 
 ### 8.1 設計原則
 
@@ -423,7 +537,7 @@ cargo run --bin planner_cli -- "幫我建一個庫存管理系統"  # Fork
 
 ---
 
-## 9. 技術規格
+## 10. 技術規格
 
 - **語言**: Rust（stable, 2021 edition）
 - **Dependencies**:

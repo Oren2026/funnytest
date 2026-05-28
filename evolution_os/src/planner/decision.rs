@@ -11,8 +11,11 @@
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "llm")]
+use crate::model::{ModelDispatcher, ModelRequest};
+
 /// 複雜度評估結果
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ComplexityMetrics {
     /// 推理分支數（0-5+）
     pub reasoning_branches: u8,
@@ -90,12 +93,120 @@ impl ComplexityMetrics {
 
         (structural + technical + len_score).min(1.0)
     }
+
+    /// 使用 LLM（llama3）分析任務複雜度
+    ///
+    /// 失敗時自動回傳 None，不影響主流程。
+    #[cfg(feature = "llm")]
+    pub fn estimate_with_llm(
+        task: &str,
+        backend: &dyn ModelDispatcher,
+        model: &str,
+    ) -> Option<Self> {
+        let prompt = format!(
+            r#"You are a project complexity analyzer. Analyze this task and output ONLY valid JSON - no explanation, no markdown, just the raw JSON object.
+
+Task: "{}"
+
+Output ONLY this exact JSON, nothing else:
+{{"reasoning_branches": 0-5, "domain_diversity": 0-4, "context_complexity": 0.0-1.0}}"#,
+            task
+        );
+
+        let req = ModelRequest::new(model, &prompt)
+            .with_temperature(0.1)
+            .with_max_tokens(150);
+
+        let resp = match backend.dispatch(req) {
+            Ok(r) => r.content,
+            Err(_) => return None,
+        };
+
+        // 從回應中提取 JSON 區塊（支援 markdown 包裝）
+        let json_str = Self::extract_json(&resp)?;
+
+        let parsed = serde_json::from_str::<serde_json::Value>(&json_str).ok()?;
+
+        Some(Self {
+            reasoning_branches: parsed
+                .get("reasoning_branches")?
+                .as_u64()? as u8,
+            domain_diversity: parsed
+                .get("domain_diversity")?
+                .as_u64()? as u8,
+            context_complexity: parsed
+                .get("context_complexity")?
+                .as_f64()? as f32,
+        })
+    }
+
+    /// 從 LLM 回應中提取 JSON（使用正則表達式）
+    #[cfg(feature = "llm")]
+    fn extract_json(text: &str) -> Option<String> {
+        use regex::Regex;
+
+        let text = text.trim();
+
+        // 嘗試找 ```json ... ``` 區塊
+        if let Ok(re) = Regex::new(r"(?s)```json\s*(.+?)\s*```") {
+            if let Some(caps) = re.captures(text) {
+                let inner = caps.get(1)?.as_str().trim();
+                if serde_json::from_str::<serde_json::Value>(inner).is_ok() {
+                    return Some(inner.to_string());
+                }
+            }
+        }
+
+        // 嘗試找 ``` ... ``` 區塊
+        if let Ok(re) = Regex::new(r"(?s)```\s*(.+?)\s*```") {
+            if let Some(caps) = re.captures(text) {
+                let inner = caps.get(1)?.as_str().trim();
+                if serde_json::from_str::<serde_json::Value>(inner).is_ok() {
+                    return Some(inner.to_string());
+                }
+            }
+        }
+
+        // 嘗試直接解析（如果是純 JSON）
+        if text.starts_with('{') && text.contains('}') {
+            // 找第一個 { 和它的配對 }
+            let start = text.find('{')?;
+            let mut depth = 0;
+            for (i, c) in text[start..].chars().enumerate() {
+                if c == '{' {
+                    depth += 1;
+                } else if c == '}' {
+                    depth -= 1;
+                    if depth == 0 {
+                        let candidate = &text[start..start + i + 1];
+                        if serde_json::from_str::<serde_json::Value>(candidate).is_ok() {
+                            return Some(candidate.to_string());
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 用正則找 {"...": ...} 模式
+        if let Ok(re) = Regex::new(r"\{[^{}]*\}") {
+            if let Some(m) = re.find(text) {
+                let candidate = m.as_str();
+                if serde_json::from_str::<serde_json::Value>(candidate).is_ok() {
+                    return Some(candidate.to_string());
+                }
+            }
+        }
+
+        None
+    }
 }
 
 /// 分工模式
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum WorkMode {
     /// 單一節點獨立處理（CPU 單核模式）
+    #[default]
     Solo,
     /// 多節點分工處理（GPU 發散模式）
     Fork,
@@ -120,7 +231,7 @@ impl WorkMode {
 }
 
 /// 分工決策結果
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct DispatchDecision {
     /// 最終決策：Solo 或 Fork
     pub mode: WorkMode,

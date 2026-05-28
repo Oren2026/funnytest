@@ -94,7 +94,7 @@ pub struct EstimatedNode {
 }
 
 /// Optimized Prompt 區塊
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OptimizedPrompt {
     /// 系統提示詞
     pub system: String,
@@ -140,8 +140,21 @@ pub struct Manifest {
 }
 
 impl Manifest {
-    /// 從任務描述產生完整的 Manifest
+    /// 從任務描述產生完整的 Manifest（純規則版本）
     pub fn from_task(task: &str) -> Self {
+        Self::from_task_inner(task, false, None, "llama3")
+    }
+
+    /// 從任務描述產生完整的 Manifest（LLM 加持版本）
+    ///
+    /// 使用 llama3 分析任務複雜度，比純規則更精準。
+    /// 若 LLM 不可用，自動降級回純規則。
+    #[cfg(feature = "llm")]
+    pub fn from_task_with_llm(task: &str, backend: &dyn crate::model::ModelDispatcher) -> Self {
+        Self::from_task_inner(task, true, Some(backend), "llama3")
+    }
+
+    fn from_task_inner(task: &str, use_llm: bool, backend: Option<&dyn crate::model::ModelDispatcher>, model: &str) -> Self {
         let now = chrono::Utc::now().to_rfc3339();
 
         // Stage 1: 確認需求 — 簡化版本，直接從 task 推斷
@@ -150,7 +163,21 @@ impl Manifest {
         let converged = questions.is_empty();
 
         // Stage 2: 分析問題
-        let complexity = ComplexityMetrics::estimate_from_task(task);
+        #[cfg(feature = "llm")]
+        let complexity = if use_llm {
+            if let Some(b) = backend {
+                // 嘗試 LLM，若失敗則降級規則
+                crate::planner::ComplexityMetrics::estimate_with_llm(task, b, model)
+                    .unwrap_or_else(|| crate::planner::ComplexityMetrics::estimate_from_task(task))
+            } else {
+                crate::planner::ComplexityMetrics::estimate_from_task(task)
+            }
+        } else {
+            crate::planner::ComplexityMetrics::estimate_from_task(task)
+        };
+
+        #[cfg(not(feature = "llm"))]
+        let complexity = crate::planner::ComplexityMetrics::estimate_from_task(task);
 
         // Stage 3: 派工決策
         let dispatch = DispatchDecision::from_task(task);

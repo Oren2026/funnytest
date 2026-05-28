@@ -1,0 +1,39 @@
+/Users/oren/Desktop/funnytest/evolution_os/target/release/deps/evolution_os-8b458390a8943aa0.d: src/lib.rs src/node/mod.rs src/node/memory_graph.rs src/node/registry.rs src/node/skill_node.rs src/node/dyn_skill_node.rs src/chain/mod.rs src/chain/discovery.rs src/skill/mod.rs src/skill/registry.rs src/skill/filesystem.rs src/skill/analysis.rs src/skill/llm.rs src/runtime/mod.rs src/runtime/dispatcher.rs src/runtime/executor.rs src/runtime/graph_executor.rs src/model/mod.rs src/model/dispatcher.rs src/model/backend.rs src/model/error.rs src/storage/mod.rs src/storage/json_storage.rs src/evo.rs src/planner/mod.rs src/planner/decision.rs src/planner/manifest.rs src/planner/stages.rs src/compiler/mod.rs src/compiler/execution_graph.rs src/compiler/node_factory.rs
+
+/Users/oren/Desktop/funnytest/evolution_os/target/release/deps/libevolution_os-8b458390a8943aa0.rlib: src/lib.rs src/node/mod.rs src/node/memory_graph.rs src/node/registry.rs src/node/skill_node.rs src/node/dyn_skill_node.rs src/chain/mod.rs src/chain/discovery.rs src/skill/mod.rs src/skill/registry.rs src/skill/filesystem.rs src/skill/analysis.rs src/skill/llm.rs src/runtime/mod.rs src/runtime/dispatcher.rs src/runtime/executor.rs src/runtime/graph_executor.rs src/model/mod.rs src/model/dispatcher.rs src/model/backend.rs src/model/error.rs src/storage/mod.rs src/storage/json_storage.rs src/evo.rs src/planner/mod.rs src/planner/decision.rs src/planner/manifest.rs src/planner/stages.rs src/compiler/mod.rs src/compiler/execution_graph.rs src/compiler/node_factory.rs
+
+/Users/oren/Desktop/funnytest/evolution_os/target/release/deps/libevolution_os-8b458390a8943aa0.rmeta: src/lib.rs src/node/mod.rs src/node/memory_graph.rs src/node/registry.rs src/node/skill_node.rs src/node/dyn_skill_node.rs src/chain/mod.rs src/chain/discovery.rs src/skill/mod.rs src/skill/registry.rs src/skill/filesystem.rs src/skill/analysis.rs src/skill/llm.rs src/runtime/mod.rs src/runtime/dispatcher.rs src/runtime/executor.rs src/runtime/graph_executor.rs src/model/mod.rs src/model/dispatcher.rs src/model/backend.rs src/model/error.rs src/storage/mod.rs src/storage/json_storage.rs src/evo.rs src/planner/mod.rs src/planner/decision.rs src/planner/manifest.rs src/planner/stages.rs src/compiler/mod.rs src/compiler/execution_graph.rs src/compiler/node_factory.rs
+
+src/lib.rs:
+src/node/mod.rs:
+src/node/memory_graph.rs:
+src/node/registry.rs:
+src/node/skill_node.rs:
+src/node/dyn_skill_node.rs:
+src/chain/mod.rs:
+src/chain/discovery.rs:
+src/skill/mod.rs:
+src/skill/registry.rs:
+src/skill/filesystem.rs:
+src/skill/analysis.rs:
+src/skill/llm.rs:
+src/runtime/mod.rs:
+src/runtime/dispatcher.rs:
+src/runtime/executor.rs:
+src/runtime/graph_executor.rs:
+src/model/mod.rs:
+src/model/dispatcher.rs:
+src/model/backend.rs:
+src/model/error.rs:
+src/storage/mod.rs:
+src/storage/json_storage.rs:
+src/evo.rs:
+src/planner/mod.rs:
+src/planner/decision.rs:
+src/planner/manifest.rs:
+src/planner/stages.rs:
+src/compiler/mod.rs:
+src/compiler/execution_graph.rs:
+src/compiler/node_factory.rs:
+
+# env-dep:CARGO_PKG_VERSION=0.1.0
