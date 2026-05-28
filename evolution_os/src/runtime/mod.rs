@@ -6,8 +6,10 @@
 //! - v0.4: Dispatcher（調度器）
 //! - v0.6: ModelDispatcher（AI syscall）
 
-pub mod executor;
 pub mod dispatcher;
+pub mod executor;
+pub mod graph_executor;
 
-pub use executor::Executor;
 pub use dispatcher::Dispatcher;
+pub use executor::Executor;
+pub use graph_executor::GraphExecutor;

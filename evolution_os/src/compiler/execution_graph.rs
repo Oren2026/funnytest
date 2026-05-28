@@ -119,6 +119,11 @@ impl ExecutionGraph {
     pub fn dependencies_of(&self, id: &str) -> Option<&[String]> {
         self.nodes.iter().find(|n| &n.id == id).map(|n| n.depends_on.as_slice())
     }
+
+    /// 取得節點的 tier
+    pub fn tier_of(&self, id: &str) -> Option<usize> {
+        self.nodes.iter().find(|n| &n.id == id).map(|n| n.tier)
+    }
 }
 
 /// 圖錯誤
